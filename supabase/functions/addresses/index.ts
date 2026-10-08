@@ -9,19 +9,8 @@ type Suggestion = {
   postcode: string;
   lat: number | null;
   lng: number | null;
-  source: "postcodes.io" | "nominatim";
+  source: "postcodes.io" | "photon";
 };
-
-const UA = {
-  "User-Agent": "MobilareCourier/1.0 (bookings@mobilare.co.uk)",
-  "Accept": "application/json",
-};
-
-async function nominatimJson(url: string): Promise<unknown> {
-  const res = await fetch(url, { headers: UA });
-  if (!res.ok) return null;
-  return await res.json();
-}
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -70,6 +59,7 @@ Deno.serve(async (req) => {
       suggestions.push(s);
     };
 
+    // District-level option (always available)
     push({
       id: `pci-${pc}`,
       label: [formatted, r.admin_ward, r.admin_district, r.region, r.country]
@@ -83,72 +73,80 @@ Deno.serve(async (req) => {
       source: "postcodes.io",
     });
 
-    type NomPlace = {
-      place_id: number;
-      display_name: string;
-      lat: string;
-      lon: string;
-      type?: string;
-      class?: string;
-      address?: Record<string, string>;
-    };
-
-    const addPlace = (place: NomPlace) => {
-      const addr = place.address ?? {};
-      const line1 = [
-        addr.house_number,
-        addr.road || addr.pedestrian || addr.footway || addr.residential,
-      ].filter(Boolean).join(" ") ||
-        addr.building ||
-        addr.amenity ||
-        addr.shop ||
-        place.display_name.split(",")[0];
-
-      const line2 = [
-        addr.suburb || addr.neighbourhood || addr.city_district,
-        addr.city || addr.town || addr.village || r.admin_district,
-        formatted,
-      ].filter(Boolean).join(", ");
-
-      push({
-        id: `osm-${place.place_id}`,
-        label: place.display_name,
-        line1,
-        line2,
-        postcode: formatted,
-        lat: parseFloat(place.lat),
-        lng: parseFloat(place.lon),
-        source: "nominatim",
-      });
-    };
-
-    // 1) Reverse geocode centroid
-    const rev = await nominatimJson(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`,
-    ) as NomPlace | null;
-    if (rev?.display_name) addPlace(rev);
-    await delay(300);
-
-    // 2) Bounded search around postcode for buildings / amenities / roads
-    const d = 0.012; // ~1km box
-    const viewbox = `${lng - d},${lat + d},${lng + d},${lat - d}`;
-    const searches = [
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(formatted)}&countrycodes=gb&format=json&addressdetails=1&limit=15`,
-      `https://nominatim.openstreetmap.org/search?q=${
-        encodeURIComponent(r.admin_ward || r.admin_district || "London")
-      }&countrycodes=gb&format=json&addressdetails=1&limit=15&viewbox=${viewbox}&bounded=1`,
-      `https://nominatim.openstreetmap.org/search?street=&city=${
-        encodeURIComponent(r.admin_district || "")
-      }&postalcode=${encodeURIComponent(formatted)}&countrycodes=gb&format=json&addressdetails=1&limit=15`,
+    // Photon (OSM) — works from most cloud IPs; Nominatim often blocks datacenters
+    const photonQueries = [
+      formatted,
+      `${r.admin_ward || ""} ${formatted}`.trim(),
+      `${r.admin_district || ""} ${formatted}`.trim(),
     ];
 
-    for (const url of searches) {
-      const data = await nominatimJson(url);
-      if (Array.isArray(data)) {
-        for (const place of data as NomPlace[]) addPlace(place);
+    for (const q of photonQueries) {
+      const url =
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${lat}&lon=${lng}&limit=12&lang=en`;
+      try {
+        const res = await fetch(url, {
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) continue;
+        const data = await res.json() as {
+          features?: Array<{
+            properties?: {
+              osm_id?: number;
+              name?: string;
+              street?: string;
+              housenumber?: string;
+              district?: string;
+              city?: string;
+              state?: string;
+              postcode?: string;
+              country?: string;
+              type?: string;
+            };
+            geometry?: { coordinates?: number[] };
+          }>;
+        };
+
+        for (const f of data.features ?? []) {
+          const p = f.properties ?? {};
+          // Prefer GB-ish results near this postcode
+          const featurePc = (p.postcode || "").replace(/\s+/g, "").toUpperCase();
+          const samePc = !featurePc || featurePc === pc ||
+            featurePc.startsWith(pc.slice(0, 3));
+          if (!samePc && p.city && r.admin_district &&
+            !String(p.city).toLowerCase().includes(
+              String(r.admin_district).toLowerCase().split(" ")[0],
+            )) {
+            continue;
+          }
+
+          const line1 = [p.housenumber, p.street || p.name].filter(Boolean)
+            .join(" ") || p.name || p.street;
+          if (!line1) continue;
+
+          const line2 = [
+            p.district,
+            p.city,
+            p.postcode || formatted,
+            p.country,
+          ].filter(Boolean).join(", ");
+
+          const label = [line1, line2].filter(Boolean).join(", ");
+          const coords = f.geometry?.coordinates; // [lng, lat]
+          push({
+            id: `ph-${p.osm_id ?? label.slice(0, 24)}`,
+            label,
+            line1,
+            line2,
+            postcode: p.postcode || formatted,
+            lat: coords?.[1] ?? lat,
+            lng: coords?.[0] ?? lng,
+            source: "photon",
+          });
+        }
+      } catch {
+        /* try next query */
       }
-      await delay(300);
-      if (suggestions.length >= 18) break;
+      if (suggestions.length >= 16) break;
     }
 
     return jsonResponse(req, {
@@ -158,16 +156,12 @@ Deno.serve(async (req) => {
       lng,
       admin_district: r.admin_district,
       region: r.region,
-      suggestions: suggestions.slice(0, 18),
-      provider: "postcodes.io+nominatim",
+      suggestions: suggestions.slice(0, 16),
+      provider: "postcodes.io+photon",
       note:
-        "Choose a suggested address for pickup/drop-off. Manual entry remains available. For Royal Mail PAF house-number complete lists, Ideal Postcodes / getAddress.io can be added later.",
+        "Select a suggested address. Use manual entry if your exact unit is missing. PAF-complete house lists need Ideal Postcodes / getAddress.io.",
     });
   } catch (e) {
     return jsonResponse(req, { error: (e as Error).message }, 500);
   }
 });
-
-function delay(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}

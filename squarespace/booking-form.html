@@ -102,15 +102,19 @@
   <div class="step" data-step="2">
     <div class="price" id="mb-price"></div>
 
-    <label>Pickup address</label>
+    <label>Pickup address — choose one</label>
     <p class="loading" id="mb-pickup-loading" hidden>Loading address suggestions…</p>
     <div class="addr-list" id="mb-pickup-list" role="radiogroup" aria-label="Pickup address"></div>
+    <label for="mb-pickup-unit" style="text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:600;">Flat / unit / company (optional)</label>
+    <input id="mb-pickup-unit" placeholder="e.g. Flat 4, Unit B, Acme Ltd" />
     <button type="button" class="linkish" id="mb-pickup-manual-toggle">Enter pickup address manually</button>
     <textarea id="mb-pickup-manual" rows="2" hidden placeholder="Full pickup address"></textarea>
 
-    <label>Drop-off address</label>
+    <label>Drop-off address — choose one</label>
     <p class="loading" id="mb-drop-loading" hidden>Loading address suggestions…</p>
     <div class="addr-list" id="mb-drop-list" role="radiogroup" aria-label="Drop-off address"></div>
+    <label for="mb-drop-unit" style="text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:600;">Flat / unit / company (optional)</label>
+    <input id="mb-drop-unit" placeholder="e.g. Reception, Suite 2" />
     <button type="button" class="linkish" id="mb-drop-manual-toggle">Enter drop-off address manually</button>
     <textarea id="mb-drop-manual" rows="2" hidden placeholder="Full drop-off address"></textarea>
 
@@ -222,7 +226,9 @@
     if (!checked || !list.length) return "";
     var s = list[parseInt(checked.value, 10)];
     if (!s) return "";
-    return s.label || [s.line1, s.line2, s.postcode].filter(Boolean).join(", ");
+    var base = s.label || [s.line1, s.line2, s.postcode].filter(Boolean).join(", ");
+    var unit = document.getElementById(which === "pickup" ? "mb-pickup-unit" : "mb-drop-unit").value.trim();
+    return unit ? (unit + ", " + base) : base;
   }
 
   function bindManual(toggleId, textareaId, listId) {
