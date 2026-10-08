@@ -337,7 +337,17 @@
       var data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
       if (!data.checkout_url) throw new Error("No Stripe URL returned");
-      window.location.href = data.checkout_url;
+      // Stripe Checkout blanks inside iframes — always break out to top window
+      var payUrl = data.checkout_url;
+      try {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = payUrl;
+        } else {
+          window.location.href = payUrl;
+        }
+      } catch (frameErr) {
+        window.location.href = payUrl;
+      }
     } catch (e) {
       err.hidden = false;
       err.textContent = e.message;
