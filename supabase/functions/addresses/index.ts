@@ -9,8 +9,19 @@ type Suggestion = {
   postcode: string;
   lat: number | null;
   lng: number | null;
-  source: "postcodes.io" | "nominatim" | "overpass";
+  source: "postcodes.io" | "nominatim";
 };
+
+const UA = {
+  "User-Agent": "MobilareCourier/1.0 (bookings@mobilare.co.uk)",
+  "Accept": "application/json",
+};
+
+async function nominatimJson(url: string): Promise<unknown> {
+  const res = await fetch(url, { headers: UA });
+  if (!res.ok) return null;
+  return await res.json();
+}
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -59,7 +70,6 @@ Deno.serve(async (req) => {
       suggestions.push(s);
     };
 
-    // Area / district option from postcodes.io
     push({
       id: `pci-${pc}`,
       label: [formatted, r.admin_ward, r.admin_district, r.region, r.country]
@@ -73,104 +83,72 @@ Deno.serve(async (req) => {
       source: "postcodes.io",
     });
 
-    // Nominatim reverse at postcode centroid
-    try {
-      const revUrl =
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`;
-      const revRes = await fetch(revUrl, {
-        headers: {
-          "User-Agent": "MobilareCourier/1.0 (bookings@mobilare.co.uk)",
-          "Accept": "application/json",
-        },
-      });
-      if (revRes.ok) {
-        const place = await revRes.json() as {
-          place_id?: number;
-          display_name?: string;
-          address?: Record<string, string>;
-        };
-        if (place.display_name) {
-          const addr = place.address ?? {};
-          const line1 = [
-            addr.house_number,
-            addr.road || addr.pedestrian || addr.residential,
-          ].filter(Boolean).join(" ") || place.display_name.split(",")[0];
-          push({
-            id: `osm-rev-${place.place_id ?? pc}`,
-            label: place.display_name,
-            line1,
-            line2: [addr.suburb || addr.neighbourhood, formatted].filter(Boolean)
-              .join(", "),
-            postcode: formatted,
-            lat,
-            lng,
-            source: "nominatim",
-          });
-        }
-      }
-    } catch {
-      /* ignore */
-    }
+    type NomPlace = {
+      place_id: number;
+      display_name: string;
+      lat: string;
+      lon: string;
+      type?: string;
+      class?: string;
+      address?: Record<string, string>;
+    };
 
-    // Nearby named roads via Overpass (selectable street addresses)
-    try {
-      const query = `
-[out:json][timeout:12];
-(
-  way["highway"~"^(residential|primary|secondary|tertiary|unclassified|living_street|service)$"]["name"](around:250,${lat},${lng});
-);
-out tags center 25;
-`.trim();
-      const opRes = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "MobilareCourier/1.0 (bookings@mobilare.co.uk)",
-        },
-        body: `data=${encodeURIComponent(query)}`,
+    const addPlace = (place: NomPlace) => {
+      const addr = place.address ?? {};
+      const line1 = [
+        addr.house_number,
+        addr.road || addr.pedestrian || addr.footway || addr.residential,
+      ].filter(Boolean).join(" ") ||
+        addr.building ||
+        addr.amenity ||
+        addr.shop ||
+        place.display_name.split(",")[0];
+
+      const line2 = [
+        addr.suburb || addr.neighbourhood || addr.city_district,
+        addr.city || addr.town || addr.village || r.admin_district,
+        formatted,
+      ].filter(Boolean).join(", ");
+
+      push({
+        id: `osm-${place.place_id}`,
+        label: place.display_name,
+        line1,
+        line2,
+        postcode: formatted,
+        lat: parseFloat(place.lat),
+        lng: parseFloat(place.lon),
+        source: "nominatim",
       });
-      if (opRes.ok) {
-        const op = await opRes.json() as {
-          elements?: Array<{
-            id: number;
-            tags?: { name?: string; "addr:housenumber"?: string };
-            center?: { lat: number; lon: number };
-          }>;
-        };
-        const roads = new Map<string, { id: number; lat: number; lon: number }>();
-        for (const el of op.elements ?? []) {
-          const name = el.tags?.name?.trim();
-          if (!name || roads.has(name.toLowerCase())) continue;
-          roads.set(name.toLowerCase(), {
-            id: el.id,
-            lat: el.center?.lat ?? lat,
-            lon: el.center?.lon ?? lng,
-          });
-        }
-        for (const [nameKey, meta] of roads) {
-          // restore proper casing from first matching element
-          const el = (op.elements ?? []).find((e) =>
-            e.tags?.name?.toLowerCase() === nameKey
-          );
-          const road = el?.tags?.name ?? nameKey;
-          const label = `${road}, ${r.admin_district || r.region || ""}, ${formatted}`
-            .replace(/, ,/g, ",")
-            .replace(/\s+,/g, ",");
-          push({
-            id: `ovp-${meta.id}`,
-            label,
-            line1: road,
-            line2: [r.admin_district, formatted].filter(Boolean).join(", "),
-            postcode: formatted,
-            lat: meta.lat,
-            lng: meta.lon,
-            source: "overpass",
-          });
-          if (suggestions.length >= 16) break;
-        }
+    };
+
+    // 1) Reverse geocode centroid
+    const rev = await nominatimJson(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`,
+    ) as NomPlace | null;
+    if (rev?.display_name) addPlace(rev);
+    await delay(300);
+
+    // 2) Bounded search around postcode for buildings / amenities / roads
+    const d = 0.012; // ~1km box
+    const viewbox = `${lng - d},${lat + d},${lng + d},${lat - d}`;
+    const searches = [
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(formatted)}&countrycodes=gb&format=json&addressdetails=1&limit=15`,
+      `https://nominatim.openstreetmap.org/search?q=${
+        encodeURIComponent(r.admin_ward || r.admin_district || "London")
+      }&countrycodes=gb&format=json&addressdetails=1&limit=15&viewbox=${viewbox}&bounded=1`,
+      `https://nominatim.openstreetmap.org/search?street=&city=${
+        encodeURIComponent(r.admin_district || "")
+      }&postalcode=${encodeURIComponent(formatted)}&countrycodes=gb&format=json&addressdetails=1&limit=15`,
+    ];
+
+    for (const url of searches) {
+      const data = await nominatimJson(url);
+      if (Array.isArray(data)) {
+        for (const place of data as NomPlace[]) addPlace(place);
       }
-    } catch {
-      /* ignore */
+      await delay(300);
+      if (suggestions.length >= 18) break;
     }
 
     return jsonResponse(req, {
@@ -180,12 +158,16 @@ out tags center 25;
       lng,
       admin_district: r.admin_district,
       region: r.region,
-      suggestions,
-      provider: "postcodes.io+nominatim+overpass",
+      suggestions: suggestions.slice(0, 18),
+      provider: "postcodes.io+nominatim",
       note:
-        "Street suggestions are nearby named roads at this postcode. Pick one, then add unit/flat in notes if needed. For Royal Mail PAF-complete lists, connect Ideal Postcodes / getAddress.io later.",
+        "Choose a suggested address for pickup/drop-off. Manual entry remains available. For Royal Mail PAF house-number complete lists, Ideal Postcodes / getAddress.io can be added later.",
     });
   } catch (e) {
     return jsonResponse(req, { error: (e as Error).message }, 500);
   }
 });
+
+function delay(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
