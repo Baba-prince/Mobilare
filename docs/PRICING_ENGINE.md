@@ -32,7 +32,8 @@ Source: Anyvan (~97k moves), Britannia / Pickfords, Man & Van + courier market.
 | Medical | +£25 | Small van |
 | Warehouse | £99.99 base | Luton |
 
-**Estimated miles (until Distance Matrix):** local 8 · regional 35 · national 90.
+**Miles:** [postcodes.io](https://postcodes.io/) validates both postcodes, returns lat/lng; road miles ≈ haversine × 1.25.  
+**Bands from road miles:** local ≤15 · regional ≤50 · national >50 (long-distance +£1/mi on courier).
 
 **Removals (no pack)** — ~3% under Anyvan avg:
 

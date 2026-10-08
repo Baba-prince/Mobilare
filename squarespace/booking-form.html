@@ -164,11 +164,14 @@
       var data = await res.json();
       if (!res.ok) throw new Error(data.error || "Quote failed");
       quoteId = data.quote_id;
-      var miles = data.estimated_miles != null ? data.estimated_miles + " mi · " : "";
+      var miles = data.estimated_miles != null ? ("~" + data.estimated_miles + " road mi") : "";
+      if (data.crow_miles != null) miles += " (" + data.crow_miles + " crow)";
+      var route = (data.pickup_formatted || data.pickup_postcode || "") +
+        " → " + (data.dropoff_formatted || data.dropoff_postcode || "");
       document.getElementById("mb-price").innerHTML =
-        "<span>VAT-inclusive competitive quote</span><strong>" + data.amount_display + "</strong>" +
-        "<span>" + miles + "ETA ~" + data.eta_minutes + " min · " + data.distance_band +
-        " · engine " + (data.pricing_engine || "competitive") + "</span>";
+        "<span>VAT-inclusive · validated via postcodes.io</span><strong>" + data.amount_display + "</strong>" +
+        "<span>" + route + "<br/>" + miles + " · ETA ~" + data.eta_minutes + " min · " +
+        data.distance_band + "</span>";
       showStep(2);
     } catch (e) {
       err.hidden = false;

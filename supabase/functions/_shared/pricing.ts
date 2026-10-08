@@ -164,6 +164,16 @@ export type PriceResult = {
   breakdown: Record<string, unknown>;
 };
 
+export type GeoOpts = {
+  /** Road miles from postcodes.io lat/lng (preferred) */
+  miles?: number;
+  crow_miles?: number;
+  band?: string;
+  eta?: number;
+  pickup_geo?: Record<string, unknown>;
+  dropoff_geo?: Record<string, unknown>;
+};
+
 export function pricePence(
   service: ServiceType,
   pickup: string,
@@ -172,12 +182,22 @@ export function pricePence(
     property_size?: PropertySize;
     vehicle_type?: VehicleType;
     with_pack?: boolean;
+    geo?: GeoOpts;
   } = {},
 ): PriceResult {
-  const coverage_ok = isCovered(pickup) && isCovered(dropoff);
-  const band = distanceBand(pickup, dropoff);
-  const miles = estimatedMiles(band);
-  const eta = etaMinutes(band, service);
+  const coverage_ok = opts.geo
+    ? true
+    : (isCovered(pickup) && isCovered(dropoff));
+  const band = opts.geo?.band ?? distanceBand(pickup, dropoff);
+  const miles = opts.geo?.miles ?? estimatedMiles(band);
+  const eta = opts.geo?.eta ?? etaMinutes(band, service);
+  const geoMeta = {
+    miles_source: opts.geo?.miles != null ? "postcodes.io+haversine" : "heuristic",
+    crow_miles: opts.geo?.crow_miles ?? null,
+    road_miles: miles,
+    pickup_geo: opts.geo?.pickup_geo ?? null,
+    dropoff_geo: opts.geo?.dropoff_geo ?? null,
+  };
 
   if (service === "removals") {
     const size = opts.property_size ?? "studio_1bed";
@@ -206,6 +226,7 @@ export function pricePence(
         mobilare_base_pence: base,
         competitor_anyvan_avg_pence: COMPETITOR_REMOVALS_ANYVAN_AVG_PENCE[size],
         distance_multiplier: REMOVALS_BAND_MULT[band],
+        ...geoMeta,
       },
     };
   }
@@ -230,6 +251,7 @@ export function pricePence(
           : RATE_SMALL_VAN_PENCE_PER_MILE,
         long_distance_extra: band === "national",
         mileage_pence: mileage,
+        ...geoMeta,
       },
     };
   }
@@ -267,6 +289,7 @@ export function pricePence(
       estimated_miles: miles,
       mileage_pence: mileage,
       market_note: "Same-day courier market base £49.99; small van 50p/mi; Luton £1.20/mi; +£1/mi long distance",
+      ...geoMeta,
     },
   };
 }
