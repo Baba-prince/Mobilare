@@ -11,3 +11,7 @@ dist/
 credentials*
 
 supabase/.temp/
+
+web/.env*.local
+web/node_modules
+web/.next

@@ -69,3 +69,14 @@ Do not commit Stripe secret keys, Supabase **service_role**, or DB passwords. An
 - Phase monitor: http://127.0.0.1:8765/artifacts/phase-monitor.html
 
 > Original project ref `tkatskfyaxzlrgaktrtn` was not accessible to this CLI account (403). A new Mobilare project was created under the logged-in org so deploy could proceed.
+
+## Frontend (Next.js)
+
+App lives in [`web/`](web/) — marketing pages, customer/driver auth wizard, portals, and admin dashboard.
+
+```bash
+cd web && npm run dev
+```
+
+Deploy: set Vercel root directory to `web`.
+

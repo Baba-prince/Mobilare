@@ -1,13 +1,16 @@
 {
   "name": "mobilare",
   "version": "1.0.0",
-  "description": "Squarespace (target) booking UI → Supabase Edge Functions → Stripe Checkout → webhook → Postgres.",
+  "description": "Squarespace (target) booking UI \u2192 Supabase Edge Functions \u2192 Stripe Checkout \u2192 webhook \u2192 Postgres.",
   "main": "index.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:web": "npm run dev --prefix web",
+    "build:web": "npm run build --prefix web",
+    "start:web": "npm run start --prefix web"
   },
   "keywords": [],
   "author": "",

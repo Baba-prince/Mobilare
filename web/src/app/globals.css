@@ -1,0 +1,45 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --teal: #0d6e7f;
+  --teal-bright: #00a8cc;
+  --ink: #0f1419;
+  --slate: #1a2332;
+  --charcoal: #1a1a1a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white text-charcoal font-sans antialiased;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-teal text-white font-bold rounded-full hover:bg-teal-bright transition duration-200 shadow-teal whitespace-nowrap;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 border border-teal/40 text-teal font-semibold rounded-full hover:bg-teal/5 transition duration-200 whitespace-nowrap;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white/90 hover:text-white transition;
+  }
+  .eyebrow {
+    @apply text-teal font-semibold text-xs uppercase tracking-[0.2em];
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-charcoal placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal font-light;
+  }
+  .card-soft {
+    @apply rounded-2xl border border-gray-200 bg-white p-6 md:p-8;
+  }
+  .admin-card {
+    @apply rounded-2xl border border-gray-200 bg-white p-5 shadow-sm;
+  }
+}

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Mobilare</title></head><body style="margin:0;padding:1.25rem;background:#E8EEF2;">
+<!--
+  Mobilare booking embed — Squarespace Code Block.
+  Flow: postcodes → quote → choose suggested addresses → pay
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap');
+  .mb-book { --mb-ink:#0F1419; --mb-teal:#0D6E7F; --mb-cyan:#00A8CC;
+    font-family:'DM Sans',system-ui,sans-serif; color:var(--mb-ink); max-width:520px; margin:0 auto; }
+  .mb-book * { box-sizing:border-box; }
+  .mb-book h2 { font-family:Syne,sans-serif; font-weight:800; font-size:1.45rem; margin:0 0 .35rem; }
+  .mb-book .sub { color:#5a6570; font-size:.9rem; margin-bottom:1.1rem; }
+  .mb-book label { display:block; font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin:0 0 .35rem; }
+  .mb-book input, .mb-book select, .mb-book textarea {
+    width:100%; padding:.8rem .95rem; border:1px solid #c9d4dc; border-radius:12px; font:inherit; margin-bottom:.85rem;
+    background:#fff; }
+  .mb-book input:focus, .mb-book select:focus, .mb-book textarea:focus {
+    outline:2px solid var(--mb-teal); border-color:transparent; }
+  .mb-book .row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+  @media (max-width:520px){ .mb-book .row { grid-template-columns:1fr; } }
+  .mb-book button {
+    width:100%; border:0; border-radius:999px; padding:.95rem 1.2rem; font-weight:700; font-size:.95rem;
+    background:var(--mb-teal); color:#fff; cursor:pointer; }
+  .mb-book button:hover { background:var(--mb-cyan); }
+  .mb-book button:disabled { opacity:.55; cursor:not-allowed; }
+  .mb-book .price {
+    background:linear-gradient(135deg,#0F1419,#1A2332 55%,#0D6E7F);
+    color:#fff; border-radius:16px; padding:1.1rem; margin:0 0 1.1rem; font-size:.85rem; line-height:1.4; }
+  .mb-book .price strong { font-family:Syne,sans-serif; font-size:1.65rem; display:block; margin:.25rem 0; }
+  .mb-book .err { color:#b42318; font-size:.88rem; margin:.5rem 0 1rem; }
+  .mb-book .step { display:none; }
+  .mb-book .step.active { display:block; }
+  .mb-book .hint { font-size:.78rem; color:#6b7782; margin-top:-.45rem; margin-bottom:1rem; }
+  .mb-book .addr-list {
+    display:grid; gap:.45rem; margin:0 0 1rem; max-height:220px; overflow:auto;
+    padding:.35rem; border:1px solid #c9d4dc; border-radius:12px; background:#fff; }
+  .mb-book .addr-list label.opt {
+    display:flex; gap:.55rem; align-items:flex-start; margin:0; padding:.55rem .6rem;
+    border-radius:10px; text-transform:none; letter-spacing:0; font-size:.82rem; font-weight:500;
+    cursor:pointer; border:1px solid transparent; }
+  .mb-book .addr-list label.opt:hover { background:#f0f5f7; }
+  .mb-book .addr-list label.opt:has(input:checked) {
+    border-color:var(--mb-teal); background:rgba(13,110,127,.08); }
+  .mb-book .addr-list input { width:auto; margin:.15rem 0 0; padding:0; }
+  .mb-book .addr-list .muted { color:#6b7782; font-size:.75rem; display:block; margin-top:.15rem; }
+  .mb-book .loading { font-size:.8rem; color:#5a6570; margin:0 0 .75rem; }
+  .mb-book .linkish {
+    background:none; border:0; color:var(--mb-teal); font-weight:700; font-size:.8rem;
+    padding:0; margin:0 0 1rem; width:auto; text-decoration:underline; cursor:pointer; border-radius:0; }
+</style>
+<div class="mb-book" id="mb-book">
+  <h2>Book Mobilare</h2>
+  <p class="sub">Instant quote · pick a suggested address · pay in full via Stripe</p>
+
+  <div class="step active" data-step="1">
+    <label for="mb-service">Service</label>
+    <select id="mb-service">
+      <option value="courier">Same-Day Courier</option>
+      <option value="medical">Medical Delivery</option>
+      <option value="legal">Legal Documents</option>
+      <option value="warehouse">Warehouse Transfers</option>
+      <option value="removals">Removals &amp; Bulk</option>
+      <option value="estate">Estate Deliveries</option>
+    </select>
+    <div id="mb-removals-fields" hidden>
+      <label for="mb-property">Property size</label>
+      <select id="mb-property">
+        <option value="studio_1bed">Studio / 1 bed</option>
+        <option value="2bed">2 bed</option>
+        <option value="3bed">3 bed</option>
+        <option value="4bed">4 bed</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:.5rem;text-transform:none;font-size:.85rem;letter-spacing:0;font-weight:500;margin-bottom:.85rem;">
+        <input type="checkbox" id="mb-pack" style="width:auto;margin:0;" /> With packing (premium)
+      </label>
+    </div>
+    <div id="mb-vehicle-fields">
+      <label for="mb-vehicle">Vehicle</label>
+      <select id="mb-vehicle">
+        <option value="small_van">Small van (50p/mile)</option>
+        <option value="luton">Luton (£1.20/mile)</option>
+      </select>
+    </div>
+    <div class="row">
+      <div>
+        <label for="mb-pickup">Pickup postcode</label>
+        <input id="mb-pickup" placeholder="e.g. EC1A 1BB" autocomplete="postal-code" />
+      </div>
+      <div>
+        <label for="mb-drop">Drop-off postcode</label>
+        <input id="mb-drop" placeholder="e.g. SW1A 1AA" autocomplete="postal-code" />
+      </div>
+    </div>
+    <label for="mb-notes">Package notes (optional)</label>
+    <textarea id="mb-notes" rows="2" placeholder="Size, temperature, documents…"></textarea>
+    <p class="hint">Enter postcodes — next you’ll choose full addresses from suggestions.</p>
+    <div class="err" id="mb-err1" hidden></div>
+    <button type="button" id="mb-quote-btn">Get quote &amp; addresses</button>
+  </div>
+
+  <div class="step" data-step="2">
+    <div class="price" id="mb-price"></div>
+
+    <label>Pickup address — choose one</label>
+    <p class="loading" id="mb-pickup-loading" hidden>Loading address suggestions…</p>
+    <div class="addr-list" id="mb-pickup-list" role="radiogroup" aria-label="Pickup address"></div>
+    <label for="mb-pickup-unit" style="text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:600;">Flat / unit / company (optional)</label>
+    <input id="mb-pickup-unit" placeholder="e.g. Flat 4, Unit B, Acme Ltd" />
+    <button type="button" class="linkish" id="mb-pickup-manual-toggle">Enter pickup address manually</button>
+    <textarea id="mb-pickup-manual" rows="2" hidden placeholder="Full pickup address"></textarea>
+
+    <label>Drop-off address — choose one</label>
+    <p class="loading" id="mb-drop-loading" hidden>Loading address suggestions…</p>
+    <div class="addr-list" id="mb-drop-list" role="radiogroup" aria-label="Drop-off address"></div>
+    <label for="mb-drop-unit" style="text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:600;">Flat / unit / company (optional)</label>
+    <input id="mb-drop-unit" placeholder="e.g. Reception, Suite 2" />
+    <button type="button" class="linkish" id="mb-drop-manual-toggle">Enter drop-off address manually</button>
+    <textarea id="mb-drop-manual" rows="2" hidden placeholder="Full drop-off address"></textarea>
+
+    <label for="mb-name">Full name</label>
+    <input id="mb-name" autocomplete="name" />
+    <label for="mb-email">Email</label>
+    <input id="mb-email" type="email" autocomplete="email" />
+    <label for="mb-phone">Phone</label>
+    <input id="mb-phone" type="tel" autocomplete="tel" />
+    <label for="mb-company">Company (optional)</label>
+    <input id="mb-company" autocomplete="organization" />
+
+    <div class="err" id="mb-err2" hidden></div>
+    <button type="button" id="mb-pay-btn">Pay in full &amp; book</button>
+  </div>
+</div>
+<script>
+(function () {
+  var API_BASE = "https://opvpkxvbvhltchxwlinr.supabase.co/functions/v1";
+  var ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wdnBreHZidmhsdGNoeHdsaW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Nzc0NDAsImV4cCI6MjEwNzA1MzQ0MH0.Wm8KyMkKncu_0cPgFbzwgXDvXyeGgpHBTJtuEZCv9LY";
+
+  var quoteId = null;
+  var pickupSuggestions = [];
+  var dropSuggestions = [];
+
+  var params = new URLSearchParams(location.search);
+  var pre = params.get("postcode") || (location.hash.match(/postcode=([^&]+)/) || [])[1];
+  if (pre) {
+    try { document.getElementById("mb-pickup").value = decodeURIComponent(pre); } catch (e) {}
+  }
+
+  function syncServiceFields() {
+    var svc = document.getElementById("mb-service").value;
+    var removals = svc === "removals";
+    document.getElementById("mb-removals-fields").hidden = !removals;
+    document.getElementById("mb-vehicle-fields").hidden = removals;
+    if (svc === "warehouse") document.getElementById("mb-vehicle").value = "luton";
+  }
+  document.getElementById("mb-service").onchange = syncServiceFields;
+  syncServiceFields();
+
+  function headers() {
+    return {
+      "Content-Type": "application/json",
+      "apikey": ANON_KEY,
+      "Authorization": "Bearer " + ANON_KEY
+    };
+  }
+
+  function showStep(n) {
+    document.querySelectorAll(".mb-book .step").forEach(function (el) {
+      el.classList.toggle("active", el.getAttribute("data-step") === String(n));
+    });
+  }
+
+  function renderSuggestions(listEl, suggestions, name) {
+    listEl.innerHTML = "";
+    if (!suggestions.length) {
+      listEl.innerHTML = "<p class='muted' style='padding:.5rem;margin:0'>No street matches — use manual entry below.</p>";
+      return;
+    }
+    suggestions.forEach(function (s, i) {
+      var id = name + "-" + i;
+      var lab = document.createElement("label");
+      lab.className = "opt";
+      lab.htmlFor = id;
+      lab.innerHTML =
+        "<input type='radio' name='" + name + "' id='" + id + "' value='" + i + "'" + (i === 0 ? " checked" : "") + " />" +
+        "<span><strong>" + escapeHtml(s.line1 || s.label) + "</strong>" +
+        "<span class='muted'>" + escapeHtml(s.line2 || s.label) + "</span></span>";
+      listEl.appendChild(lab);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function loadAddresses(postcode, listEl, loadingEl, which) {
+    loadingEl.hidden = false;
+    listEl.innerHTML = "";
+    try {
+      var res = await fetch(API_BASE + "/addresses", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ postcode: postcode })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Address lookup failed");
+      if (which === "pickup") pickupSuggestions = data.suggestions || [];
+      else dropSuggestions = data.suggestions || [];
+      renderSuggestions(listEl, data.suggestions || [], which);
+    } catch (e) {
+      listEl.innerHTML = "<p class='muted' style='padding:.5rem;margin:0'>" + escapeHtml(e.message) + " — enter manually.</p>";
+      if (which === "pickup") pickupSuggestions = [];
+      else dropSuggestions = [];
+    } finally {
+      loadingEl.hidden = true;
+    }
+  }
+
+  function selectedAddress(which) {
+    var manual = document.getElementById(which === "pickup" ? "mb-pickup-manual" : "mb-drop-manual");
+    if (!manual.hidden && manual.value.trim()) return manual.value.trim();
+    var list = which === "pickup" ? pickupSuggestions : dropSuggestions;
+    var checked = document.querySelector("input[name='" + which + "']:checked");
+    if (!checked || !list.length) return "";
+    var s = list[parseInt(checked.value, 10)];
+    if (!s) return "";
+    var base = s.label || [s.line1, s.line2, s.postcode].filter(Boolean).join(", ");
+    var unit = document.getElementById(which === "pickup" ? "mb-pickup-unit" : "mb-drop-unit").value.trim();
+    return unit ? (unit + ", " + base) : base;
+  }
+
+  function bindManual(toggleId, textareaId, listId) {
+    document.getElementById(toggleId).onclick = function () {
+      var ta = document.getElementById(textareaId);
+      var list = document.getElementById(listId);
+      var show = ta.hidden;
+      ta.hidden = !show;
+      list.style.opacity = show ? "0.45" : "1";
+      this.textContent = show
+        ? "Choose from suggestions instead"
+        : (toggleId.indexOf("pickup") >= 0 ? "Enter pickup address manually" : "Enter drop-off address manually");
+      if (show) ta.focus();
+    };
+  }
+  bindManual("mb-pickup-manual-toggle", "mb-pickup-manual", "mb-pickup-list");
+  bindManual("mb-drop-manual-toggle", "mb-drop-manual", "mb-drop-list");
+
+  document.getElementById("mb-quote-btn").onclick = async function () {
+    var err = document.getElementById("mb-err1");
+    err.hidden = true;
+    this.disabled = true;
+    try {
+      var svc = document.getElementById("mb-service").value;
+      var pickupPc = document.getElementById("mb-pickup").value;
+      var dropPc = document.getElementById("mb-drop").value;
+      var payload = {
+        service_type: svc,
+        pickup_postcode: pickupPc,
+        dropoff_postcode: dropPc,
+        package_notes: document.getElementById("mb-notes").value
+      };
+      if (svc === "removals") {
+        payload.property_size = document.getElementById("mb-property").value;
+        payload.with_pack = document.getElementById("mb-pack").checked;
+      } else {
+        payload.vehicle_type = document.getElementById("mb-vehicle").value;
+      }
+
+      var res = await fetch(API_BASE + "/quote", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Quote failed");
+      quoteId = data.quote_id;
+
+      var miles = data.estimated_miles != null ? ("~" + data.estimated_miles + " road mi") : "";
+      if (data.crow_miles != null) miles += " (" + data.crow_miles + " crow)";
+      var route = (data.pickup_formatted || data.pickup_postcode || "") +
+        " → " + (data.dropoff_formatted || data.dropoff_postcode || "");
+      document.getElementById("mb-price").innerHTML =
+        "<span>VAT-inclusive · postcodes validated</span><strong>" + data.amount_display + "</strong>" +
+        "<span>" + route + "<br/>" + miles + " · ETA ~" + data.eta_minutes + " min · " +
+        data.distance_band + "</span>";
+
+      showStep(2);
+
+      // Load suggestions sequentially (be kind to free geo APIs)
+      await loadAddresses(
+        data.pickup_formatted || pickupPc,
+        document.getElementById("mb-pickup-list"),
+        document.getElementById("mb-pickup-loading"),
+        "pickup"
+      );
+      await loadAddresses(
+        data.dropoff_formatted || dropPc,
+        document.getElementById("mb-drop-list"),
+        document.getElementById("mb-drop-loading"),
+        "drop"
+      );
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = e.message;
+    } finally {
+      this.disabled = false;
+    }
+  };
+
+  document.getElementById("mb-pay-btn").onclick = async function () {
+    var err = document.getElementById("mb-err2");
+    err.hidden = true;
+    this.disabled = true;
+    try {
+      var pickup_address = selectedAddress("pickup");
+      var dropoff_address = selectedAddress("drop");
+      if (!pickup_address) throw new Error("Choose a pickup address (or enter manually)");
+      if (!dropoff_address) throw new Error("Choose a drop-off address (or enter manually)");
+      if (!document.getElementById("mb-name").value.trim()) throw new Error("Enter your name");
+      if (!document.getElementById("mb-email").value.trim()) throw new Error("Enter your email");
+
+      var res = await fetch(API_BASE + "/checkout", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          quote_id: quoteId,
+          name: document.getElementById("mb-name").value,
+          email: document.getElementById("mb-email").value,
+          phone: document.getElementById("mb-phone").value,
+          company: document.getElementById("mb-company").value,
+          pickup_address: pickup_address,
+          dropoff_address: dropoff_address
+        })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      if (!data.checkout_url) throw new Error("No Stripe URL returned");
+      // Stripe Checkout blanks inside iframes — always break out to top window
+      var payUrl = data.checkout_url;
+      try {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = payUrl;
+        } else {
+          window.location.href = payUrl;
+        }
+      } catch (frameErr) {
+        window.location.href = payUrl;
+      }
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = e.message;
+      this.disabled = false;
+    }
+  };
+})();
+</script>
+</body></html>
