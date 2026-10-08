@@ -1,6 +1,8 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import {
+  assertPropertySize,
   assertService,
+  assertVehicle,
   normalizePostcode,
   pricePence,
 } from "../_shared/pricing.ts";
@@ -26,14 +28,30 @@ Deno.serve(async (req) => {
       : null;
 
     if (!pickup_postcode || !dropoff_postcode) {
-      return jsonResponse(req, { error: "pickup_postcode and dropoff_postcode required" }, 400);
+      return jsonResponse(req, {
+        error: "pickup_postcode and dropoff_postcode required",
+      }, 400);
     }
 
-    const priced = pricePence(service_type, pickup_postcode, dropoff_postcode);
+    const property_size = service_type === "removals"
+      ? assertPropertySize(body.property_size)
+      : undefined;
+    const vehicle_type = body.vehicle_type
+      ? assertVehicle(body.vehicle_type, "small_van")
+      : undefined;
+    const with_pack = Boolean(body.with_pack);
+
+    const priced = pricePence(service_type, pickup_postcode, dropoff_postcode, {
+      property_size,
+      vehicle_type,
+      with_pack,
+    });
+
     if (!priced.coverage_ok) {
       return jsonResponse(req, {
         coverage_ok: false,
-        error: "Postcode outside Mobilare coverage for online booking. Call 07984 884644.",
+        error:
+          "Postcode outside Mobilare coverage for online booking. Call 07984 884644.",
       }, 422);
     }
 
@@ -51,9 +69,20 @@ Deno.serve(async (req) => {
         eta_minutes: priced.eta,
         coverage_ok: true,
         expires_at,
-        meta: { vat: "inclusive", currency: "GBP" },
+        meta: {
+          vat: "inclusive",
+          currency: "GBP",
+          estimated_miles: priced.estimated_miles,
+          property_size: property_size ?? null,
+          vehicle_type: vehicle_type ?? null,
+          with_pack,
+          breakdown: priced.breakdown,
+          pricing_engine: "competitive_apr2026",
+        },
       })
-      .select("id, amount_vat_inclusive_pence, distance_band, eta_minutes, expires_at")
+      .select(
+        "id, amount_vat_inclusive_pence, distance_band, eta_minutes, expires_at, meta",
+      )
       .single();
 
     if (error) {
@@ -71,9 +100,15 @@ Deno.serve(async (req) => {
       amount_vat_inclusive_pence: data.amount_vat_inclusive_pence,
       amount_display: `£${(data.amount_vat_inclusive_pence / 100).toFixed(2)}`,
       distance_band: data.distance_band,
+      estimated_miles: priced.estimated_miles,
       eta_minutes: data.eta_minutes,
       vat: "inclusive",
       expires_at: data.expires_at,
+      property_size: property_size ?? null,
+      vehicle_type: vehicle_type ?? null,
+      with_pack,
+      breakdown: priced.breakdown,
+      pricing_engine: "competitive_apr2026",
     });
   } catch (e) {
     return jsonResponse(req, { error: (e as Error).message }, 400);

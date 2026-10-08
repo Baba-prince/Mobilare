@@ -1,0 +1,109 @@
+{
+  "engine": "competitive_apr2026",
+  "results": [
+    {
+      "case": "Courier EC\u2192SW small van (local)",
+      "amount_display": "\u00a353.99",
+      "pence": 5399,
+      "band": "local",
+      "miles": 8,
+      "eta": 90
+    },
+    {
+      "case": "Courier EC\u2192M1 small van (national)",
+      "amount_display": "\u00a3184.99",
+      "pence": 18499,
+      "band": "national",
+      "miles": 90,
+      "eta": 360
+    },
+    {
+      "case": "Courier EC\u2192SW Luton",
+      "amount_display": "\u00a359.59",
+      "pence": 5959,
+      "band": "local",
+      "miles": 8,
+      "eta": 90
+    },
+    {
+      "case": "Medical EC\u2192SW",
+      "amount_display": "\u00a378.99",
+      "pence": 7899,
+      "band": "local",
+      "miles": 8,
+      "eta": 75
+    },
+    {
+      "case": "Legal EC\u2192SW",
+      "amount_display": "\u00a363.99",
+      "pence": 6399,
+      "band": "local",
+      "miles": 8,
+      "eta": 75
+    },
+    {
+      "case": "Estate EC\u2192SW",
+      "amount_display": "\u00a368.99",
+      "pence": 6899,
+      "band": "local",
+      "miles": 8,
+      "eta": 90
+    },
+    {
+      "case": "Warehouse EC\u2192SW Luton",
+      "amount_display": "\u00a3109.59",
+      "pence": 10959,
+      "band": "local",
+      "miles": 8,
+      "eta": 210
+    },
+    {
+      "case": "Removals 1bed",
+      "amount_display": "\u00a3469.00",
+      "pence": 46900,
+      "band": "local",
+      "miles": 8,
+      "eta": 210
+    },
+    {
+      "case": "Removals 2bed",
+      "amount_display": "\u00a3539.00",
+      "pence": 53900,
+      "band": "local",
+      "miles": 8,
+      "eta": 210
+    },
+    {
+      "case": "Removals 3bed",
+      "amount_display": "\u00a3669.00",
+      "pence": 66900,
+      "band": "local",
+      "miles": 8,
+      "eta": 210
+    },
+    {
+      "case": "Removals 4bed",
+      "amount_display": "\u00a3909.00",
+      "pence": 90900,
+      "band": "local",
+      "miles": 8,
+      "eta": 210
+    },
+    {
+      "case": "Removals 1bed + pack",
+      "amount_display": "\u00a3824.39",
+      "pence": 82439,
+      "band": "local",
+      "miles": 8,
+      "eta": 210
+    },
+    {
+      "case": "Removals 3bed national",
+      "amount_display": "\u00a3836.25",
+      "pence": 83625,
+      "band": "national",
+      "miles": 90,
+      "eta": 480
+    }
+  ]
+}

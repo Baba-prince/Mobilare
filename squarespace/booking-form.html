@@ -47,6 +47,25 @@
       <option value="removals">Removals &amp; Bulk</option>
       <option value="estate">Estate Deliveries</option>
     </select>
+    <div id="mb-removals-fields" hidden>
+      <label for="mb-property">Property size</label>
+      <select id="mb-property">
+        <option value="studio_1bed">Studio / 1 bed</option>
+        <option value="2bed">2 bed</option>
+        <option value="3bed">3 bed</option>
+        <option value="4bed">4 bed</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:.5rem;text-transform:none;font-size:.85rem;letter-spacing:0;font-weight:500;margin-bottom:.85rem;">
+        <input type="checkbox" id="mb-pack" style="width:auto;margin:0;" /> With packing (premium)
+      </label>
+    </div>
+    <div id="mb-vehicle-fields">
+      <label for="mb-vehicle">Vehicle</label>
+      <select id="mb-vehicle">
+        <option value="small_van">Small van (50p/mile)</option>
+        <option value="luton">Luton (£1.20/mile)</option>
+      </select>
+    </div>
     <div class="row">
       <div>
         <label for="mb-pickup">Pickup postcode</label>
@@ -59,7 +78,7 @@
     </div>
     <label for="mb-notes">Package notes (optional)</label>
     <textarea id="mb-notes" rows="2" placeholder="Size, temperature, documents…"></textarea>
-    <p class="hint">No card required for quote. Coverage checked instantly.</p>
+    <p class="hint">Competitive Apr 2026 rates · VAT inclusive · No card for quote.</p>
     <div class="err" id="mb-err1" hidden></div>
     <button type="button" id="mb-quote-btn">Get quote</button>
   </div>
@@ -95,6 +114,16 @@
     try { document.getElementById("mb-pickup").value = decodeURIComponent(pre); } catch (e) {}
   }
 
+  function syncServiceFields() {
+    var svc = document.getElementById("mb-service").value;
+    var removals = svc === "removals";
+    document.getElementById("mb-removals-fields").hidden = !removals;
+    document.getElementById("mb-vehicle-fields").hidden = removals;
+    if (svc === "warehouse") document.getElementById("mb-vehicle").value = "luton";
+  }
+  document.getElementById("mb-service").onchange = syncServiceFields;
+  syncServiceFields();
+
   function headers() {
     return {
       "Content-Type": "application/json",
@@ -114,22 +143,32 @@
     err.hidden = true;
     this.disabled = true;
     try {
+      var svc = document.getElementById("mb-service").value;
+      var payload = {
+        service_type: svc,
+        pickup_postcode: document.getElementById("mb-pickup").value,
+        dropoff_postcode: document.getElementById("mb-drop").value,
+        package_notes: document.getElementById("mb-notes").value
+      };
+      if (svc === "removals") {
+        payload.property_size = document.getElementById("mb-property").value;
+        payload.with_pack = document.getElementById("mb-pack").checked;
+      } else {
+        payload.vehicle_type = document.getElementById("mb-vehicle").value;
+      }
       var res = await fetch(API_BASE + "/quote", {
         method: "POST",
         headers: headers(),
-        body: JSON.stringify({
-          service_type: document.getElementById("mb-service").value,
-          pickup_postcode: document.getElementById("mb-pickup").value,
-          dropoff_postcode: document.getElementById("mb-drop").value,
-          package_notes: document.getElementById("mb-notes").value
-        })
+        body: JSON.stringify(payload)
       });
       var data = await res.json();
       if (!res.ok) throw new Error(data.error || "Quote failed");
       quoteId = data.quote_id;
+      var miles = data.estimated_miles != null ? data.estimated_miles + " mi · " : "";
       document.getElementById("mb-price").innerHTML =
-        "<span>VAT-inclusive fixed quote</span><strong>" + data.amount_display + "</strong>" +
-        "<span>ETA about " + data.eta_minutes + " minutes · " + data.distance_band + " · expires in 30 min</span>";
+        "<span>VAT-inclusive competitive quote</span><strong>" + data.amount_display + "</strong>" +
+        "<span>" + miles + "ETA ~" + data.eta_minutes + " min · " + data.distance_band +
+        " · engine " + (data.pricing_engine || "competitive") + "</span>";
       showStep(2);
     } catch (e) {
       err.hidden = false;
