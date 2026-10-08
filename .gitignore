@@ -9,3 +9,5 @@ dist/
 .vercel
 .secret*
 credentials*
+
+supabase/.temp/
