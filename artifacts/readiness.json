@@ -4,6 +4,7 @@
   "supabase_project": "opvpkxvbvhltchxwlinr",
   "github": "https://github.com/Baba-prince/Mobilare",
   "updated": "2026-10-08",
+  "last_paid_booking": "MB-21B9FFF1",
   "decisions": {
     "payment": "pay_in_full",
     "vat": "inclusive",
@@ -57,12 +58,12 @@
     {
       "id": 3,
       "name": "Stripe checkout + webhook",
-      "status": "partial",
+      "status": "done",
       "items": [
         { "id": "3a", "label": "checkout Edge Function code", "done": true },
         { "id": "3b", "label": "webhook Edge Function code", "done": true },
         { "id": "3c", "label": "Stripe webhook endpoint wired", "done": true },
-        { "id": "3d", "label": "Test card 4242 end-to-end → booking paid", "done": false }
+        { "id": "3d", "label": "Test card 4242 end-to-end → booking paid (MB-21B9FFF1)", "done": true }
       ]
     },
     {
@@ -111,7 +112,7 @@
     { "id": "g1", "label": "Stripe secret rotated (still using shared test key)", "done": false, "critical": true },
     { "id": "g2", "label": "Migrations applied", "done": true, "critical": true },
     { "id": "g3", "label": "quote / checkout / webhook / track deployed", "done": true, "critical": true },
-    { "id": "g4", "label": "Stripe test payment → DB paid", "done": false, "critical": true },
+    { "id": "g4", "label": "Stripe test payment → DB paid (MB-21B9FFF1)", "done": true, "critical": true },
     { "id": "g5", "label": "Booking UI calling API on mobilare.co.uk", "done": false, "critical": true },
     { "id": "g6", "label": "Success / cancel URLs on production domain", "done": false, "critical": true },
     { "id": "g7", "label": "Webhook endpoint + secret configured", "done": true, "critical": true },
@@ -122,6 +123,7 @@
   "notes": [
     "Backend live on Supabase opvpkxvbvhltchxwlinr.",
     "GitHub: Baba-prince/Mobilare (CLI authenticated as Baba-prince).",
-    "Complete a test card payment at /book/ to close gate g4 / item 3d."
+    "E2E paid booking MB-21B9FFF1 — courier OL84AX→UB109LE, status paid, job queued.",
+    "Webhook handler updated to constructEventAsync for Deno reliability."
   ]
 }

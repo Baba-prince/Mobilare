@@ -20,14 +20,39 @@
 <body>
   <div class="card">
     <h1>Payment received</h1>
-    <p>Thanks — your Mobilare booking is confirmed once Stripe finishes confirming (usually instant).</p>
+    <p id="msg">Thanks — confirming your Mobilare booking…</p>
     <p>Booking ref: <code id="ref">…</code></p>
+    <p id="statusline" style="color:#9AA8B5;font-size:.85rem"></p>
     <p><a id="track" href="../track/">Track this delivery →</a></p>
   </div>
   <script>
+    const API_BASE = "https://opvpkxvbvhltchxwlinr.supabase.co/functions/v1";
+    const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wdnBreHZidmhsdGNoeHdsaW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Nzc0NDAsImV4cCI6MjEwNzA1MzQ0MH0.Wm8KyMkKncu_0cPgFbzwgXDvXyeGgpHBTJtuEZCv9LY";
     const ref = new URLSearchParams(location.search).get('booking_ref') || '—';
     document.getElementById('ref').textContent = ref;
     document.getElementById('track').href = '../track/?ref=' + encodeURIComponent(ref);
+
+    async function refreshStatus() {
+      if (!ref || ref === '—') return;
+      try {
+        const res = await fetch(API_BASE + '/track?ref=' + encodeURIComponent(ref), {
+          headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'lookup failed');
+        const paid = data.status === 'paid' || data.status === 'assigned' || data.status === 'in_transit' || data.status === 'delivered';
+        document.getElementById('msg').textContent = paid
+          ? 'Thanks — your Mobilare booking is confirmed.'
+          : 'Thanks — payment received. Final confirmation is finishing…';
+        document.getElementById('statusline').textContent = 'Status: ' + data.status +
+          (data.job ? ' · job ' + data.job.status : '');
+      } catch (e) {
+        document.getElementById('msg').textContent =
+          'Thanks — your Mobilare booking is confirmed once Stripe finishes confirming (usually instant).';
+      }
+    }
+    refreshStatus();
+    setTimeout(refreshStatus, 2500);
   </script>
 </body>
 </html>

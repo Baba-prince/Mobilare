@@ -25,7 +25,12 @@ Deno.serve(async (req) => {
   const body = await req.text();
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    // Deno: prefer async constructor (SubtleCrypto)
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret,
+    );
   } catch (err) {
     console.error("Signature verification failed", err);
     return new Response("Invalid signature", { status: 400 });
