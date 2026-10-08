@@ -7,15 +7,38 @@
     "payment": "pay_in_full",
     "vat": "inclusive",
     "currency": "GBP",
-    "services": ["courier", "medical", "legal", "warehouse", "removals", "estate"],
-    "cors": ["https://mobilare.co.uk", "https://www.mobilare.co.uk", "http://127.0.0.1:8765"],
+    "services": [
+      "courier",
+      "medical",
+      "legal",
+      "warehouse",
+      "removals",
+      "estate"
+    ],
+    "cors": [
+      "https://mobilare.co.uk",
+      "https://www.mobilare.co.uk",
+      "http://127.0.0.1:8765"
+    ],
     "admin_v1": "supabase_dashboard"
   },
   "ui_investigation": {
     "stated_host": "squarespace",
     "actual_host": "vercel_nextjs",
-    "routes_ok": ["/", "/landing", "/premium"],
-    "routes_missing": ["/book", "/quote", "/track", "/checkout", "/booking-success", "/api/quote", "/api/checkout"],
+    "routes_ok": [
+      "/",
+      "/landing",
+      "/premium"
+    ],
+    "routes_missing": [
+      "/book",
+      "/quote",
+      "/track",
+      "/checkout",
+      "/booking-success",
+      "/api/quote",
+      "/api/checkout"
+    ],
     "book_form": "stub_redirect_to_contact_hash",
     "local_booking_ui": "http://127.0.0.1:8765/book/",
     "stripe_in_ui": false,
@@ -27,10 +50,26 @@
       "name": "Security & workspace",
       "status": "partial",
       "items": [
-        { "id": "0a", "label": "Work folder + gitignore + env example", "done": true },
-        { "id": "0b", "label": "Rotate leaked Stripe / Supabase / DB credentials", "done": false },
-        { "id": "0c", "label": "Stripe publishable key (optional — Checkout redirect)", "done": true },
-        { "id": "0d", "label": "Local .env created (not committed)", "done": true }
+        {
+          "id": "0a",
+          "label": "Work folder + gitignore + env example",
+          "done": true
+        },
+        {
+          "id": "0b",
+          "label": "Rotate leaked Stripe / Supabase / DB credentials",
+          "done": false
+        },
+        {
+          "id": "0c",
+          "label": "Stripe publishable key (optional \u2014 Checkout redirect)",
+          "done": true
+        },
+        {
+          "id": "0d",
+          "label": "Local .env created (not committed)",
+          "done": true
+        }
       ]
     },
     {
@@ -38,9 +77,21 @@
       "name": "Database schema",
       "status": "done",
       "items": [
-        { "id": "1a", "label": "Migration SQL authored", "done": true },
-        { "id": "1b", "label": "Migration applied on Supabase project", "done": true },
-        { "id": "1c", "label": "RLS policies verified", "done": true }
+        {
+          "id": "1a",
+          "label": "Migration SQL authored",
+          "done": true
+        },
+        {
+          "id": "1b",
+          "label": "Migration applied on Supabase project",
+          "done": true
+        },
+        {
+          "id": "1c",
+          "label": "RLS policies verified",
+          "done": true
+        }
       ]
     },
     {
@@ -48,9 +99,21 @@
       "name": "Quote API",
       "status": "done",
       "items": [
-        { "id": "2a", "label": "Pricing config for all 6 services", "done": true },
-        { "id": "2b", "label": "quote Edge Function code", "done": true },
-        { "id": "2c", "label": "Function deployed + smoke-tested", "done": true }
+        {
+          "id": "2a",
+          "label": "Pricing config for all 6 services",
+          "done": true
+        },
+        {
+          "id": "2b",
+          "label": "quote Edge Function code",
+          "done": true
+        },
+        {
+          "id": "2c",
+          "label": "Function deployed + smoke-tested",
+          "done": true
+        }
       ]
     },
     {
@@ -58,10 +121,26 @@
       "name": "Stripe checkout + webhook",
       "status": "partial",
       "items": [
-        { "id": "3a", "label": "checkout Edge Function code", "done": true },
-        { "id": "3b", "label": "webhook Edge Function code", "done": true },
-        { "id": "3c", "label": "Stripe CLI / Dashboard webhook wired", "done": true },
-        { "id": "3d", "label": "Test card 4242 end-to-end → booking paid", "done": false }
+        {
+          "id": "3a",
+          "label": "checkout Edge Function code",
+          "done": true
+        },
+        {
+          "id": "3b",
+          "label": "webhook Edge Function code",
+          "done": true
+        },
+        {
+          "id": "3c",
+          "label": "Stripe CLI / Dashboard webhook wired",
+          "done": true
+        },
+        {
+          "id": "3d",
+          "label": "Test card 4242 end-to-end \u2192 booking paid",
+          "done": false
+        }
       ]
     },
     {
@@ -69,8 +148,16 @@
       "name": "Track API",
       "status": "done",
       "items": [
-        { "id": "4a", "label": "track Edge Function code", "done": true },
-        { "id": "4b", "label": "Deployed + public ref lookup works", "done": true }
+        {
+          "id": "4a",
+          "label": "track Edge Function code",
+          "done": true
+        },
+        {
+          "id": "4b",
+          "label": "Deployed + public ref lookup works",
+          "done": true
+        }
       ]
     },
     {
@@ -78,8 +165,16 @@
       "name": "Ops & notifications",
       "status": "partial",
       "items": [
-        { "id": "5a", "label": "Ops via Supabase dashboard", "done": true },
-        { "id": "5b", "label": "Booking confirmation email", "done": false }
+        {
+          "id": "5a",
+          "label": "Ops via Supabase dashboard",
+          "done": true
+        },
+        {
+          "id": "5b",
+          "label": "Booking confirmation email",
+          "done": false
+        }
       ]
     },
     {
@@ -87,11 +182,31 @@
       "name": "Squarespace / booking UI pack",
       "status": "partial",
       "items": [
-        { "id": "6a", "label": "Multi-step booking embed authored", "done": true },
-        { "id": "6b", "label": "Track widget authored", "done": true },
-        { "id": "6c", "label": "Local booking UI wired to live API", "done": true },
-        { "id": "6d", "label": "Success + cancel pages (local staging)", "done": true },
-        { "id": "6e", "label": "DNS: Squarespace vs Vercel resolved", "done": false }
+        {
+          "id": "6a",
+          "label": "Multi-step booking embed authored",
+          "done": true
+        },
+        {
+          "id": "6b",
+          "label": "Track widget authored",
+          "done": true
+        },
+        {
+          "id": "6c",
+          "label": "Local booking UI wired to live API",
+          "done": true
+        },
+        {
+          "id": "6d",
+          "label": "Success + cancel pages (local staging)",
+          "done": true
+        },
+        {
+          "id": "6e",
+          "label": "DNS: Squarespace vs Vercel resolved",
+          "done": false
+        }
       ]
     },
     {
@@ -99,23 +214,94 @@
       "name": "Deploy & go-live",
       "status": "partial",
       "items": [
-        { "id": "7a", "label": "All functions deployed with secrets", "done": true },
-        { "id": "7b", "label": "UAT checklist green", "done": false },
-        { "id": "7c", "label": "Switch to live Stripe keys", "done": false },
-        { "id": "7d", "label": "Push to GitHub Baba-prince/Mobilare", "done": false }
+        {
+          "id": "7a",
+          "label": "All functions deployed with secrets",
+          "done": true
+        },
+        {
+          "id": "7b",
+          "label": "UAT checklist green",
+          "done": false
+        },
+        {
+          "id": "7c",
+          "label": "Switch to live Stripe keys",
+          "done": false
+        },
+        {
+          "id": "7d",
+          "label": "Push to GitHub Baba-prince/Mobilare",
+          "done": false
+        }
       ]
     }
   ],
   "production_gates": [
-    { "id": "g1", "label": "Stripe secret rotated (still using shared test key)", "done": false, "critical": true },
-    { "id": "g2", "label": "Migrations applied", "done": true, "critical": true },
-    { "id": "g3", "label": "quote / checkout / webhook / track deployed", "done": true, "critical": true },
-    { "id": "g4", "label": "Stripe test payment → DB paid", "done": false, "critical": true },
-    { "id": "g5", "label": "Booking UI calling API on mobilare.co.uk", "done": false, "critical": true },
-    { "id": "g6", "label": "Success / cancel URLs on production domain", "done": false, "critical": true },
-    { "id": "g7", "label": "Webhook endpoint + secret configured", "done": true, "critical": true },
-    { "id": "g8", "label": "CORS locked to Mobilare + local staging", "done": true, "critical": false },
-    { "id": "g9", "label": "DNS host confirmed (Squarespace vs Vercel)", "done": false, "critical": true },
-    { "id": "g10", "label": "Still on Stripe test keys (correct until UAT)", "done": true, "critical": true }
+    {
+      "id": "g1",
+      "label": "Stripe secret rotated (still using shared test key)",
+      "done": false,
+      "critical": true
+    },
+    {
+      "id": "g2",
+      "label": "Migrations applied",
+      "done": true,
+      "critical": true
+    },
+    {
+      "id": "g3",
+      "label": "quote / checkout / webhook / track deployed",
+      "done": true,
+      "critical": true
+    },
+    {
+      "id": "g4",
+      "label": "Stripe test payment \u2192 DB paid",
+      "done": false,
+      "critical": true
+    },
+    {
+      "id": "g5",
+      "label": "Booking UI calling API on mobilare.co.uk",
+      "done": false,
+      "critical": true
+    },
+    {
+      "id": "g6",
+      "label": "Success / cancel URLs on production domain",
+      "done": false,
+      "critical": true
+    },
+    {
+      "id": "g7",
+      "label": "Webhook endpoint + secret configured",
+      "done": true,
+      "critical": true
+    },
+    {
+      "id": "g8",
+      "label": "CORS locked to Mobilare + local staging",
+      "done": true,
+      "critical": false
+    },
+    {
+      "id": "g9",
+      "label": "DNS host confirmed (Squarespace vs Vercel)",
+      "done": false,
+      "critical": true
+    },
+    {
+      "id": "g10",
+      "label": "Still on Stripe test keys (correct until UAT)",
+      "done": true,
+      "critical": true
+    }
+  ],
+  "notes": [
+    "Backend live on Supabase opvpkxvbvhltchxwlinr (new project; prior ref inaccessible to CLI).",
+    "GitHub push blocked: authenticated as Beeplus7, repo Baba-prince/Mobilare returned 403.",
+    "Complete a test card payment at /book/ to close gate g4 / item 3d."
   ]
 }
