@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Track — Mobilare</title>
+  <style>
+    body { margin:0; min-height:100vh; background:
+      radial-gradient(900px 400px at 80% 0%, rgba(13,110,127,.3), transparent 50%),
+      #0B1015; padding: 2rem 1rem 3rem; }
+  </style>
+</head>
+<body>
+<iframe src="../squarespace/track-widget.html" style="border:0;width:100%;max-width:520px;height:420px;display:block;margin:0 auto;" title="Track Mobilare"></iframe>
+<p style="text-align:center;font:14px/1.4 system-ui,sans-serif;color:#9AA8B5;margin-top:1rem">
+  <a href="../book/" style="color:#00A8CC">Book a delivery</a>
+</p>
+<script>
+  const params = new URLSearchParams(location.search);
+  const ref = params.get('ref') || params.get('booking_ref');
+  if (ref) {
+    // pass ref into iframe via hash after load
+    const frame = document.querySelector('iframe');
+    frame.addEventListener('load', () => {
+      try {
+        const doc = frame.contentDocument;
+        const input = doc && doc.getElementById('mb-ref');
+        if (input) { input.value = ref; doc.getElementById('mb-track-btn').click(); }
+      } catch (e) {}
+    });
+  }
+</script>
+</body>
+</html>

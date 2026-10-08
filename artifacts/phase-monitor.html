@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mobilare — Phase plan & production readiness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0F1419;
+      --fog: #E8EEF2;
+      --mist: #9AA8B5;
+      --teal: #0D6E7F;
+      --cyan: #00A8CC;
+      --ok: #1F8A4C;
+      --warn: #C47B17;
+      --bad: #B42318;
+      --card: rgba(255,255,255,0.06);
+      --line: rgba(255,255,255,0.12);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      font-size: 14px;
+      color: #f4f7fa;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(0,168,204,0.28), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(13,110,127,0.35), transparent 50%),
+        linear-gradient(165deg, #0B1015 0%, #121A24 45%, #0D6E7F22 100%);
+      background-attachment: fixed;
+    }
+    .wrap { width: min(1040px, calc(100% - 2rem)); margin: 0 auto; padding: 1.75rem 0 3rem; }
+    header.hero {
+      display: grid;
+      gap: 0.75rem;
+      padding: 1.25rem 0 1.5rem;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 1.25rem;
+      animation: rise .7s ease both;
+    }
+    .brand {
+      font-family: Syne, sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.5rem, 3.2vw, 2rem);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin: 0;
+      background: linear-gradient(90deg, #fff 20%, var(--cyan));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .eyebrow {
+      display: inline-flex; gap: .45rem; align-items: center;
+      font-size: .65rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .eyebrow i {
+      width: .45rem; height: .45rem; border-radius: 50%; background: var(--cyan);
+      box-shadow: 0 0 0 0 rgba(0,168,204,.6);
+      animation: pulse 2s infinite;
+    }
+    .lede { max-width: 34rem; color: #c5d0d8; font-size: .875rem; line-height: 1.45; margin: 0; }
+    .score-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0 0;
+    }
+    @media (max-width: 800px) { .score-row { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      backdrop-filter: blur(10px);
+      animation: rise .8s ease both;
+    }
+    .panel h3 {
+      margin: 0 0 .25rem;
+      font-size: .65rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--mist);
+      font-weight: 700;
+    }
+    .big {
+      font-family: Syne, sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+      letter-spacing: -0.03em;
+      margin: .1rem 0;
+    }
+    .meter {
+      height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: .75rem;
+    }
+    .meter > span {
+      display: block; height: 100%; border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), var(--cyan));
+      width: 0; transition: width 1s ease;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.35fr .9fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .phase {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: .75rem .9rem;
+      margin-bottom: .55rem;
+      background: rgba(0,0,0,.18);
+      transition: border-color .2s, transform .2s;
+      animation: rise .9s ease both;
+    }
+    .phase:hover { border-color: rgba(0,168,204,.45); transform: translateY(-1px); }
+    .phase-head {
+      display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer;
+    }
+    .phase-head h4 {
+      margin: 0; font-family: Syne, sans-serif; font-size: .9rem; font-weight: 700;
+    }
+    .badge {
+      font-size: .6rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      padding: .25rem .45rem; border-radius: 999px; border: 1px solid transparent;
+    }
+    .badge.done { color: #b8f0c8; background: rgba(31,138,76,.2); border-color: rgba(31,138,76,.35); }
+    .badge.partial, .badge.in_progress { color: #ffd59a; background: rgba(196,123,23,.18); border-color: rgba(196,123,23,.35); }
+    .badge.pending { color: #c5d0d8; background: rgba(255,255,255,.06); border-color: var(--line); }
+    .items { list-style: none; margin: .65rem 0 0; padding: 0; display: none; }
+    .phase.open .items { display: grid; gap: .35rem; }
+    .items li {
+      display: grid; grid-template-columns: 1rem 1fr; gap: .45rem; align-items: start;
+      font-size: .8rem; color: #d7e0e7;
+    }
+    .check {
+      width: .9rem; height: .9rem; border-radius: 3px; margin-top: .12rem;
+      border: 1.5px solid var(--mist); display: grid; place-items: center; font-size: .6rem;
+    }
+    .check.on { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .section-title {
+      font-family: Syne, sans-serif; font-size: 1rem; margin: 0 0 .75rem; font-weight: 800;
+    }
+    .gates li {
+      list-style: none; display: flex; gap: .55rem; align-items: flex-start;
+      padding: .5rem 0; border-bottom: 1px solid var(--line); font-size: .8rem;
+    }
+    .gates { margin: 0; padding: 0; }
+    .dot {
+      width: .55rem; height: .55rem; border-radius: 50%; margin-top: .3rem; flex: none;
+      background: var(--bad);
+    }
+    .dot.on { background: var(--ok); }
+    .critical { color: #ffb4ae; font-size: .58rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .gap-box {
+      margin-top: .85rem; padding: .75rem; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(180,35,24,.18), rgba(13,110,127,.15));
+      border: 1px solid rgba(255,180,170,.25);
+      font-size: .78rem; line-height: 1.4; color: #f0d8d6;
+    }
+    .gap-box strong { color: #fff; }
+    .decisions {
+      display: grid; gap: .35rem; margin: 0; padding: 0; list-style: none;
+    }
+    .decisions li {
+      display: flex; justify-content: space-between; gap: .75rem;
+      padding: .4rem .1rem; border-bottom: 1px solid var(--line); font-size: .78rem;
+    }
+    .decisions span:last-child { color: var(--cyan); font-weight: 700; text-align: right; }
+    footer {
+      margin-top: 1.75rem; padding-top: 1rem; border-top: 1px solid var(--line);
+      color: var(--mist); font-size: .75rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    }
+    a { color: var(--cyan); }
+    .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+    .actions a, .actions button {
+      appearance: none; border: 1px solid var(--line); background: rgba(255,255,255,.04);
+      color: #fff; border-radius: 999px; padding: .45rem .8rem; font: inherit; font-weight: 700;
+      font-size: .75rem; text-decoration: none; cursor: pointer;
+    }
+    .actions a.primary, .actions button.primary {
+      background: linear-gradient(90deg, var(--teal), var(--cyan)); border-color: transparent;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,168,204,.55); }
+      70% { box-shadow: 0 0 0 10px rgba(0,168,204,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,168,204,0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow"><i></i> Production readiness monitor</div>
+      <h1 class="brand">Mobilare</h1>
+      <p class="lede">
+        Phase plan tracker for Squarespace → Supabase Edge Functions → Stripe → Postgres.
+        Built from the live UI investigation and locked product decisions.
+      </p>
+      <div class="score-row">
+        <div class="panel">
+          <h3>Readiness score</h3>
+          <div class="big" id="score">—%</div>
+          <div class="meter"><span id="score-bar"></span></div>
+          <p style="margin:.55rem 0 0;color:#9AA8B5;font-size:.75rem" id="score-caption">Loading…</p>
+        </div>
+        <div class="panel">
+          <h3>Phases complete</h3>
+          <div class="big" id="phase-score">—</div>
+          <p style="margin:.55rem 0 0;color:#9AA8B5;font-size:.75rem">Click a phase to expand checklist items</p>
+        </div>
+        <div class="panel">
+          <h3>Critical gates open</h3>
+          <div class="big" id="gate-open">—</div>
+          <p style="margin:.55rem 0 0;color:#9AA8B5;font-size:.75rem">Must be green before live Stripe keys</p>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="primary" href="../docs/PHASE_PLAN.md">Phase plan</a>
+        <a href="../docs/UI_GAP_ANALYSIS.md">UI gap analysis</a>
+        <a href="../squarespace/INSTALL.md">Squarespace install</a>
+        <button type="button" id="reload">Reload readiness.json</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2 class="section-title">Phase plan</h2>
+        <div id="phases"></div>
+      </section>
+      <aside>
+        <div class="panel" style="margin-bottom:1rem">
+          <h2 class="section-title" style="font-size:.95rem">Locked decisions</h2>
+          <ul class="decisions" id="decisions"></ul>
+        </div>
+        <div class="panel">
+          <h2 class="section-title" style="font-size:.95rem">Production gates</h2>
+          <ul class="gates" id="gates"></ul>
+          <div class="gap-box" id="ui-gap"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <span>Flow: Squarespace form → Edge Functions → Stripe → webhook → Postgres</span>
+      <span id="updated"></span>
+    </footer>
+  </div>
+
+  <script>
+    async function load() {
+      const res = await fetch("./readiness.json?ts=" + Date.now());
+      if (!res.ok) throw new Error("Could not load readiness.json");
+      return res.json();
+    }
+
+    function statusBadge(status) {
+      const cls = status === "done" ? "done" : (status === "pending" ? "pending" : "partial");
+      const label = status.replace("_", " ");
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function render(data) {
+      const allItems = data.phases.flatMap((p) => p.items);
+      const doneItems = allItems.filter((i) => i.done).length;
+      const pct = Math.round((doneItems / allItems.length) * 100);
+      document.getElementById("score").textContent = pct + "%";
+      document.getElementById("score-bar").style.width = pct + "%";
+      document.getElementById("score-caption").textContent =
+        doneItems + " of " + allItems.length + " checklist items complete";
+
+      const phaseDone = data.phases.filter((p) => p.items.every((i) => i.done)).length;
+      document.getElementById("phase-score").textContent = phaseDone + " / " + data.phases.length;
+
+      const criticalOpen = data.production_gates.filter((g) => g.critical && !g.done).length;
+      document.getElementById("gate-open").textContent = String(criticalOpen);
+      document.getElementById("updated").textContent = "Updated " + (data.updated || "—");
+
+      const d = data.decisions;
+      document.getElementById("decisions").innerHTML = [
+        ["Payment", d.payment],
+        ["VAT", d.vat + " · " + d.currency],
+        ["Services", d.services.join(", ")],
+        ["CORS", d.cors.join(" · ")],
+        ["Admin v1", d.admin_v1],
+      ].map(([k, v]) => `<li><span>${k}</span><span>${v}</span></li>`).join("");
+
+      document.getElementById("phases").innerHTML = data.phases.map((p, idx) => {
+        const open = idx <= 3 ? " open" : "";
+        const items = p.items.map((i) =>
+          `<li><span class="check ${i.done ? "on" : ""}">${i.done ? "✓" : ""}</span><span>${i.label}</span></li>`
+        ).join("");
+        return `<article class="phase${open}" data-id="${p.id}">
+          <div class="phase-head">
+            <h4>Phase ${p.id} — ${p.name}</h4>
+            ${statusBadge(p.status)}
+          </div>
+          <ul class="items">${items}</ul>
+        </article>`;
+      }).join("");
+
+      document.querySelectorAll(".phase-head").forEach((el) => {
+        el.addEventListener("click", () => el.parentElement.classList.toggle("open"));
+      });
+
+      document.getElementById("gates").innerHTML = data.production_gates.map((g) =>
+        `<li>
+          <span class="dot ${g.done ? "on" : ""}"></span>
+          <div>
+            <div>${g.label}</div>
+            ${g.critical && !g.done ? '<div class="critical">Critical</div>' : ""}
+          </div>
+        </li>`
+      ).join("");
+
+      const ui = data.ui_investigation;
+      document.getElementById("ui-gap").innerHTML =
+        "<strong>UI gap:</strong> Stated host <em>" + ui.stated_host +
+        "</em>, live host <em>" + ui.actual_host +
+        "</em>. Book form is <em>" + ui.book_form +
+        "</em>. Missing routes: " + ui.routes_missing.slice(0, 5).join(", ") + "…";
+    }
+
+    const EMBEDDED = {
+  "project": "Mobilare",
+  "domain": "https://mobilare.co.uk",
+  "supabase_project": "opvpkxvbvhltchxwlinr",
+  "updated": "2026-10-08",
+  "decisions": {
+    "payment": "pay_in_full",
+    "vat": "inclusive",
+    "currency": "GBP",
+    "services": ["courier", "medical", "legal", "warehouse", "removals", "estate"],
+    "cors": ["https://mobilare.co.uk", "https://www.mobilare.co.uk", "http://127.0.0.1:8765"],
+    "admin_v1": "supabase_dashboard"
+  },
+  "ui_investigation": {
+    "stated_host": "squarespace",
+    "actual_host": "vercel_nextjs",
+    "routes_ok": ["/", "/landing", "/premium"],
+    "routes_missing": ["/book", "/quote", "/track", "/checkout", "/booking-success", "/api/quote", "/api/checkout"],
+    "book_form": "stub_redirect_to_contact_hash",
+    "local_booking_ui": "http://127.0.0.1:8765/book/",
+    "stripe_in_ui": false,
+    "supabase_in_ui": false
+  },
+  "phases": [
+    {
+      "id": 0,
+      "name": "Security & workspace",
+      "status": "partial",
+      "items": [
+        { "id": "0a", "label": "Work folder + gitignore + env example", "done": true },
+        { "id": "0b", "label": "Rotate leaked Stripe / Supabase / DB credentials", "done": false },
+        { "id": "0c", "label": "Stripe publishable key (optional — Checkout redirect)", "done": true },
+        { "id": "0d", "label": "Local .env created (not committed)", "done": true }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Database schema",
+      "status": "done",
+      "items": [
+        { "id": "1a", "label": "Migration SQL authored", "done": true },
+        { "id": "1b", "label": "Migration applied on Supabase project", "done": true },
+        { "id": "1c", "label": "RLS policies verified", "done": true }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Quote API",
+      "status": "done",
+      "items": [
+        { "id": "2a", "label": "Pricing config for all 6 services", "done": true },
+        { "id": "2b", "label": "quote Edge Function code", "done": true },
+        { "id": "2c", "label": "Function deployed + smoke-tested", "done": true }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Stripe checkout + webhook",
+      "status": "partial",
+      "items": [
+        { "id": "3a", "label": "checkout Edge Function code", "done": true },
+        { "id": "3b", "label": "webhook Edge Function code", "done": true },
+        { "id": "3c", "label": "Stripe CLI / Dashboard webhook wired", "done": true },
+        { "id": "3d", "label": "Test card 4242 end-to-end → booking paid", "done": false }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Track API",
+      "status": "done",
+      "items": [
+        { "id": "4a", "label": "track Edge Function code", "done": true },
+        { "id": "4b", "label": "Deployed + public ref lookup works", "done": true }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Ops & notifications",
+      "status": "partial",
+      "items": [
+        { "id": "5a", "label": "Ops via Supabase dashboard", "done": true },
+        { "id": "5b", "label": "Booking confirmation email", "done": false }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Squarespace / booking UI pack",
+      "status": "partial",
+      "items": [
+        { "id": "6a", "label": "Multi-step booking embed authored", "done": true },
+        { "id": "6b", "label": "Track widget authored", "done": true },
+        { "id": "6c", "label": "Local booking UI wired to live API", "done": true },
+        { "id": "6d", "label": "Success + cancel pages (local staging)", "done": true },
+        { "id": "6e", "label": "DNS: Squarespace vs Vercel resolved", "done": false }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Deploy & go-live",
+      "status": "partial",
+      "items": [
+        { "id": "7a", "label": "All functions deployed with secrets", "done": true },
+        { "id": "7b", "label": "UAT checklist green", "done": false },
+        { "id": "7c", "label": "Switch to live Stripe keys", "done": false },
+        { "id": "7d", "label": "Push to GitHub Baba-prince/Mobilare", "done": false }
+      ]
+    }
+  ],
+  "production_gates": [
+    { "id": "g1", "label": "Stripe secret rotated (still using shared test key)", "done": false, "critical": true },
+    { "id": "g2", "label": "Migrations applied", "done": true, "critical": true },
+    { "id": "g3", "label": "quote / checkout / webhook / track deployed", "done": true, "critical": true },
+    { "id": "g4", "label": "Stripe test payment → DB paid", "done": false, "critical": true },
+    { "id": "g5", "label": "Booking UI calling API on mobilare.co.uk", "done": false, "critical": true },
+    { "id": "g6", "label": "Success / cancel URLs on production domain", "done": false, "critical": true },
+    { "id": "g7", "label": "Webhook endpoint + secret configured", "done": true, "critical": true },
+    { "id": "g8", "label": "CORS locked to Mobilare + local staging", "done": true, "critical": false },
+    { "id": "g9", "label": "DNS host confirmed (Squarespace vs Vercel)", "done": false, "critical": true },
+    { "id": "g10", "label": "Still on Stripe test keys (correct until UAT)", "done": true, "critical": true }
+  ]
+};
+
+
+    async function boot() {
+      try {
+        if (location.protocol === "file:") {
+          render(EMBEDDED);
+          document.getElementById("score-caption").textContent += " · embedded snapshot (file://)";
+          return;
+        }
+        render(await load());
+      } catch (e) {
+        render(EMBEDDED);
+        document.getElementById("score-caption").textContent =
+          "Using embedded snapshot (" + e.message + ")";
+      }
+    }
+
+    document.getElementById("reload").onclick = boot;
+    boot();
+  </script>
+</body>
+</html>

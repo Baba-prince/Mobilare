@@ -1,0 +1,16 @@
+project_id = "opvpkxvbvhltchxwlinr"
+
+[api]
+enabled = true
+
+[functions.quote]
+verify_jwt = false
+
+[functions.checkout]
+verify_jwt = false
+
+[functions.webhook]
+verify_jwt = false
+
+[functions.track]
+verify_jwt = false

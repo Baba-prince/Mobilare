@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Mobilare</title></head><body style="margin:0;padding:1.25rem;background:#E8EEF2;">
+<!-- Mobilare tracking embed — Squarespace Code Block -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&family=Syne:wght@800&display=swap');
+  .mb-track { font-family:'DM Sans',system-ui,sans-serif; max-width:480px; margin:0 auto; color:#0F1419; }
+  .mb-track h2 { font-family:Syne,sans-serif; font-weight:800; margin:0 0 .75rem; }
+  .mb-track input { width:100%; padding:.85rem 1rem; border:1px solid #c9d4dc; border-radius:12px; font:inherit; margin-bottom:.75rem; }
+  .mb-track button { width:100%; border:0; border-radius:999px; padding:1rem; font-weight:700; background:#0D6E7F; color:#fff; cursor:pointer; }
+  .mb-track .card { margin-top:1rem; padding:1.25rem; border-radius:16px; background:linear-gradient(160deg,#0F1419,#1A2332); color:#fff; }
+  .mb-track .err { color:#b42318; margin-top:.75rem; font-size:.9rem; }
+</style>
+<div class="mb-track">
+  <h2>Track a delivery</h2>
+  <input id="mb-ref" placeholder="Booking ref e.g. MB-A1B2C3D4" />
+  <button type="button" id="mb-track-btn">Track</button>
+  <div class="err" id="mb-track-err" hidden></div>
+  <div class="card" id="mb-track-out" hidden></div>
+</div>
+<script>
+(function () {
+  var API_BASE = "https://opvpkxvbvhltchxwlinr.supabase.co/functions/v1";
+  var ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wdnBreHZidmhsdGNoeHdsaW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Nzc0NDAsImV4cCI6MjEwNzA1MzQ0MH0.Wm8KyMkKncu_0cPgFbzwgXDvXyeGgpHBTJtuEZCv9LY";
+  document.getElementById("mb-track-btn").onclick = async function () {
+    var err = document.getElementById("mb-track-err");
+    var out = document.getElementById("mb-track-out");
+    err.hidden = true; out.hidden = true;
+    var ref = document.getElementById("mb-ref").value.trim();
+    if (!ref) { err.hidden = false; err.textContent = "Enter a booking ref"; return; }
+    try {
+      var res = await fetch(API_BASE + "/track?ref=" + encodeURIComponent(ref), {
+        headers: { "apikey": ANON_KEY, "Authorization": "Bearer " + ANON_KEY }
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Not found");
+      out.hidden = false;
+      out.innerHTML =
+        "<div><strong>" + data.booking_ref + "</strong> · " + data.service_type + "</div>" +
+        "<div style='margin:.5rem 0'>Status: <strong>" + data.status + "</strong></div>" +
+        "<div>" + data.pickup_postcode + " → " + data.dropoff_postcode + "</div>" +
+        (data.job ? "<div style='margin-top:.75rem'>Job: " + data.job.status +
+          (data.job.eta_minutes != null ? " · ETA " + data.job.eta_minutes + " min" : "") + "</div>" : "") +
+        (data.proof_of_delivery ? "<div style='margin-top:.5rem'>POD captured " +
+          (data.proof_of_delivery.captured_at || "") + "</div>" : "");
+    } catch (e) {
+      err.hidden = false; err.textContent = e.message;
+    }
+  };
+})();
+</script>
+
+</body></html>
