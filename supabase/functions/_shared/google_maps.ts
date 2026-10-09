@@ -1,5 +1,6 @@
 /**
- * Google Maps Platform helpers (Geocoding + Places Text Search).
+ * Google Maps Platform helpers.
+ * Uses Geocoding (stable) + Places API (New) + Routes API.
  * Requires secret GOOGLE_MAPS_API_KEY on Edge Functions.
  */
 
@@ -60,7 +61,7 @@ export async function geocodePostcode(postcode: string): Promise<LatLng | null> 
   return g ? { lat: g.lat, lng: g.lng } : null;
 }
 
-/** Nearby / text search for street addresses around a postcode. */
+/** Nearby / text search for street addresses around a postcode (Places API New). */
 export async function placesForPostcode(
   postcode: string,
   lat: number,
@@ -77,32 +78,48 @@ export async function placesForPostcode(
   const seen = new Set<string>();
 
   for (const q of queries) {
-    const params = new URLSearchParams({
-      query: q,
-      location: `${lat},${lng}`,
-      radius: "1200",
-      region: "uk",
-      key,
-    });
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?${params}`,
+        "https://places.googleapis.com/v1/places:searchText",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": key,
+            "X-Goog-FieldMask":
+              "places.id,places.displayName,places.formattedAddress,places.location",
+          },
+          body: JSON.stringify({
+            textQuery: q,
+            locationBias: {
+              circle: {
+                center: { latitude: lat, longitude: lng },
+                radius: 1200.0,
+              },
+            },
+            regionCode: "GB",
+            maxResultCount: 10,
+          }),
+        },
       );
       const data = await res.json();
-      if (data.status !== "OK" && data.status !== "ZERO_RESULTS") continue;
-      for (const p of data.results ?? []) {
-        const label = String(p.formatted_address || p.name || "");
+      if (!res.ok) continue;
+      for (const p of data.places ?? []) {
+        const label = String(
+          p.formattedAddress || p.displayName?.text || "",
+        );
         if (!label || seen.has(label.toLowerCase())) continue;
         seen.add(label.toLowerCase());
         const parts = label.split(",").map((s: string) => s.trim());
+        const placeId = String(p.id || "").replace(/^places\//, "");
         out.push({
-          id: `g-${p.place_id}`,
+          id: `g-${placeId || label}`,
           label,
-          line1: parts[0] || String(p.name || label),
+          line1: parts[0] || String(p.displayName?.text || label),
           line2: parts.slice(1).join(", "),
           postcode,
-          lat: p.geometry?.location?.lat ?? lat,
-          lng: p.geometry?.location?.lng ?? lng,
+          lat: p.location?.latitude ?? lat,
+          lng: p.location?.longitude ?? lng,
           source: "google",
         });
       }
@@ -115,6 +132,7 @@ export async function placesForPostcode(
   return out.slice(0, 16);
 }
 
+/** Driving route via Routes API (computeRoutes). */
 export async function directionsRoute(
   origin: LatLng,
   destination: LatLng,
@@ -126,22 +144,44 @@ export async function directionsRoute(
   const key = googleMapsKey();
   if (!key) return null;
 
-  const params = new URLSearchParams({
-    origin: `${origin.lat},${origin.lng}`,
-    destination: `${destination.lat},${destination.lng}`,
-    mode: "driving",
-    region: "uk",
-    key,
-  });
   const res = await fetch(
-    `https://maps.googleapis.com/maps/api/directions/json?${params}`,
+    "https://routes.googleapis.com/directions/v2:computeRoutes",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask":
+          "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
+      },
+      body: JSON.stringify({
+        origin: {
+          location: {
+            latLng: { latitude: origin.lat, longitude: origin.lng },
+          },
+        },
+        destination: {
+          location: {
+            latLng: {
+              latitude: destination.lat,
+              longitude: destination.lng,
+            },
+          },
+        },
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_UNAWARE",
+        regionCode: "GB",
+      }),
+    },
   );
   const data = await res.json();
-  if (data.status !== "OK" || !data.routes?.[0]) return null;
-  const leg = data.routes[0].legs?.[0];
+  if (!res.ok || !data.routes?.[0]) return null;
+  const route = data.routes[0];
+  const durationRaw = String(route.duration ?? "0s");
+  const duration_seconds = Number(durationRaw.replace(/s$/, "")) || 0;
   return {
-    distance_metres: leg?.distance?.value ?? 0,
-    duration_seconds: leg?.duration?.value ?? 0,
-    polyline: data.routes[0].overview_polyline?.points ?? null,
+    distance_metres: Number(route.distanceMeters ?? 0),
+    duration_seconds,
+    polyline: route.polyline?.encodedPolyline ?? null,
   };
 }
