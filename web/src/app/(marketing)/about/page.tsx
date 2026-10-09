@@ -11,6 +11,8 @@ export default function Page() {
         eyebrow="Company"
         title="About Mobilare"
         subtitle="We build deadline protection for teams who cannot wait until tomorrow."
+        showPostcodeFinder
+        postcodeCtaLabel="Book a delivery"
       />
       <Section>
         

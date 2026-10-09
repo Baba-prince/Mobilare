@@ -4,7 +4,27 @@ import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = { title: "Book" };
 
-export default function BookPage() {
+type Props = {
+  searchParams?: Record<string, string | string[] | undefined>;
+};
+
+function one(v: string | string[] | undefined): string {
+  if (Array.isArray(v)) return v[0] || "";
+  return v || "";
+}
+
+export default function BookPage({ searchParams }: Props) {
+  const qs = new URLSearchParams();
+  const postcode = one(searchParams?.postcode);
+  const address = one(searchParams?.address);
+  const line1 = one(searchParams?.line1);
+  if (postcode) qs.set("postcode", postcode);
+  if (address) qs.set("address", address);
+  if (line1) qs.set("line1", line1);
+  const embedSrc = qs.toString()
+    ? `/embeds/booking-form.html?${qs.toString()}`
+    : "/embeds/booking-form.html";
+
   return (
     <>
       <PageHero
@@ -15,11 +35,13 @@ export default function BookPage() {
         primaryLabel="Create customer account"
         secondaryHref="/track"
         secondaryLabel="Track a job"
+        showPostcodeFinder
+        postcodeCtaLabel="Find pickup address"
       />
       <Section>
         <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white min-h-[720px]">
           <iframe
-            src="/embeds/booking-form.html"
+            src={embedSrc}
             title="Mobilare booking"
             className="w-full min-h-[720px] border-0"
           />

@@ -11,6 +11,8 @@ export default function Page() {
         eyebrow="Product"
         title="How it works"
         subtitle="Quote in seconds, pay in full, track to the door with verified proof."
+        showPostcodeFinder
+        postcodeCtaLabel="Try a postcode"
       />
       <Section>
         

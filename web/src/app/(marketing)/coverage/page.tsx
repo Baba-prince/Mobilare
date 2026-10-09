@@ -11,13 +11,14 @@ export default function Page() {
         eyebrow="UK network"
         title="Coverage"
         subtitle="Same-day corridors across England with denser fleets in legal, healthcare, and estate hubs."
+        showPostcodeFinder
+        postcodeCtaLabel="Check coverage"
       />
       <Section>
-        
         <div className="grid md:grid-cols-2 gap-6">
           {[
             ["Core metros", "London, Manchester, Birmingham, Leeds, Bristol, and connecting belts."],
-            ["Postcode + Maps", "postcodes.io validation with Google Maps geocoding & Places in production."],
+            ["Postcode + Maps", "Live postcode finder uses Google Maps Places + postcodes.io in production."],
             ["Specialist lanes", "Medical and legal routes with verified handoff."],
             ["Expanding weekly", "Driver density grows as demand corridors light up."],
           ].map(([t, d]) => (
@@ -27,7 +28,6 @@ export default function Page() {
             </div>
           ))}
         </div>
-    
       </Section>
     </>
   );

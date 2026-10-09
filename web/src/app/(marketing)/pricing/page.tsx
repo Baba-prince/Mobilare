@@ -11,9 +11,10 @@ export default function Page() {
         eyebrow="Transparent rates"
         title="Pricing"
         subtitle="VAT-inclusive GBP. Competitive same-day bands. Pay in full at booking."
+        showPostcodeFinder
+        postcodeCtaLabel="Get quote area"
       />
       <Section>
-        
         <div className="grid md:grid-cols-3 gap-6 mb-10">
           {[
             ["Local", "From £18", "Short hops inside the same corridor"],
@@ -30,7 +31,6 @@ export default function Page() {
         <p className="text-sm text-gray-500 font-light">
           Final quote is calculated live from distance and service type. No hidden booking fees.
         </p>
-    
       </Section>
     </>
   );

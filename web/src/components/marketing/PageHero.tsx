@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PostcodeFinder } from "@/components/marketing/PostcodeFinder";
 
 type Props = {
   eyebrow?: string;
@@ -8,6 +9,9 @@ type Props = {
   primaryLabel?: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  /** Show live UK postcode finder (addresses API) under the CTAs. */
+  showPostcodeFinder?: boolean;
+  postcodeCtaLabel?: string;
 };
 
 export function PageHero({
@@ -18,6 +22,8 @@ export function PageHero({
   primaryLabel = "Book now",
   secondaryHref,
   secondaryLabel,
+  showPostcodeFinder = false,
+  postcodeCtaLabel = "Find address",
 }: Props) {
   return (
     <section className="bg-gradient-to-br from-ink via-slate to-teal/10 text-white py-16 md:py-24">
@@ -36,11 +42,22 @@ export function PageHero({
             {primaryLabel}
           </Link>
           {secondaryHref && secondaryLabel ? (
-            <Link href={secondaryHref} className="btn-secondary border-white/30 text-white hover:bg-white/5">
+            <Link
+              href={secondaryHref}
+              className="btn-secondary border-white/30 text-white hover:bg-white/5"
+            >
               {secondaryLabel}
             </Link>
           ) : null}
         </div>
+        {showPostcodeFinder ? (
+          <div className="pt-2">
+            <p className="text-sm text-gray-400 mb-3 font-light">
+              Check coverage — enter a UK postcode for address suggestions
+            </p>
+            <PostcodeFinder variant="hero" ctaLabel={postcodeCtaLabel} />
+          </div>
+        ) : null}
       </div>
     </section>
   );

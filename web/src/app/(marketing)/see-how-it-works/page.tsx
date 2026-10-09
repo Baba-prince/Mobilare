@@ -11,6 +11,8 @@ export default function Page() {
         eyebrow="Walkthrough"
         title="See how it works"
         subtitle="A deeper look at the Mobilare booking journey from postcode to proof of delivery."
+        showPostcodeFinder
+        postcodeCtaLabel="Try postcode finder"
       />
       <Section>
         

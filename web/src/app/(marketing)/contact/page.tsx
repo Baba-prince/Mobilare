@@ -15,6 +15,10 @@ export default function ContactPage() {
         subtitle="Bookings, partnerships, and support — we respond within business hours."
         primaryHref={site.phoneHref}
         primaryLabel="Call us"
+        secondaryHref="/book"
+        secondaryLabel="Book online"
+        showPostcodeFinder
+        postcodeCtaLabel="Start with postcode"
       />
       <Section>
         <div className="grid md:grid-cols-2 gap-10">

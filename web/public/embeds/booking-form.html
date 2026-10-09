@@ -48,6 +48,11 @@
   .mb-book .linkish {
     background:none; border:0; color:var(--mb-teal); font-weight:700; font-size:.8rem;
     padding:0; margin:0 0 1rem; width:auto; text-decoration:underline; cursor:pointer; border-radius:0; }
+  .mb-book .pc-preview {
+    margin:-.35rem 0 .85rem; padding:.55rem .7rem; border-radius:10px; border:1px solid #c9d4dc;
+    background:#f7fafb; font-size:.78rem; color:#5a6570; display:none; }
+  .mb-book .pc-preview.show { display:block; }
+  .mb-book .pc-preview strong { color:var(--mb-ink); }
 </style>
 <div class="mb-book" id="mb-book">
   <h2>Book Mobilare</h2>
@@ -86,15 +91,17 @@
       <div>
         <label for="mb-pickup">Pickup postcode</label>
         <input id="mb-pickup" placeholder="e.g. EC1A 1BB" autocomplete="postal-code" />
+        <div class="pc-preview" id="mb-pickup-preview" aria-live="polite"></div>
       </div>
       <div>
         <label for="mb-drop">Drop-off postcode</label>
         <input id="mb-drop" placeholder="e.g. SW1A 1AA" autocomplete="postal-code" />
+        <div class="pc-preview" id="mb-drop-preview" aria-live="polite"></div>
       </div>
     </div>
     <label for="mb-notes">Package notes (optional)</label>
     <textarea id="mb-notes" rows="2" placeholder="Size, temperature, documents…"></textarea>
-    <p class="hint">Enter postcodes — next you’ll choose full addresses from suggestions.</p>
+    <p class="hint">Postcodes are checked live via our addresses API — then pick a full street suggestion.</p>
     <div class="err" id="mb-err1" hidden></div>
     <button type="button" id="mb-quote-btn">Get quote &amp; addresses</button>
   </div>
@@ -141,9 +148,25 @@
   var dropSuggestions = [];
 
   var params = new URLSearchParams(location.search);
+  // Prefer iframe query; also accept parent page query when embedded under /book
+  try {
+    if (window.parent && window.parent !== window && window.parent.location) {
+      var parentQs = new URLSearchParams(window.parent.location.search);
+      parentQs.forEach(function (v, k) { if (!params.has(k)) params.set(k, v); });
+    }
+  } catch (e) { /* cross-origin ignore */ }
   var pre = params.get("postcode") || (location.hash.match(/postcode=([^&]+)/) || [])[1];
+  var preAddress = params.get("address") || params.get("line1");
   if (pre) {
     try { document.getElementById("mb-pickup").value = decodeURIComponent(pre); } catch (e) {}
+  }
+  if (preAddress) {
+    try {
+      var decoded = decodeURIComponent(preAddress);
+      document.getElementById("mb-pickup-manual").hidden = false;
+      document.getElementById("mb-pickup-manual").value = decoded;
+      document.getElementById("mb-pickup-manual-toggle").textContent = "Choose from suggestions instead";
+    } catch (e) {}
   }
 
   function syncServiceFields() {
@@ -156,12 +179,72 @@
   document.getElementById("mb-service").onchange = syncServiceFields;
   syncServiceFields();
 
+  function looksLikeUkPostcode(value) {
+    var compact = String(value || "").replace(/\s+/g, "").toUpperCase();
+    return /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/i.test(compact) ||
+      /^[A-Z]{1,2}\d[A-Z\d]?$/i.test(compact);
+  }
+
+  function bindLivePostcode(inputId, previewId) {
+    var input = document.getElementById(inputId);
+    var preview = document.getElementById(previewId);
+    var timer = null;
+    var seq = 0;
+    function render(msg, ok) {
+      preview.classList.add("show");
+      preview.innerHTML = ok
+        ? "<strong>" + escapeHtml(msg) + "</strong>"
+        : escapeHtml(msg);
+    }
+    input.addEventListener("input", function () {
+      input.value = input.value.toUpperCase();
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if (!q) { preview.classList.remove("show"); preview.innerHTML = ""; return; }
+      if (!looksLikeUkPostcode(q) || q.replace(/\s+/g, "").length < 5) {
+        render("Keep typing a full UK postcode…", false);
+        return;
+      }
+      render("Looking up addresses…", false);
+      var my = ++seq;
+      timer = setTimeout(async function () {
+        try {
+          var res = await fetch(API_BASE + "/addresses", {
+            method: "POST",
+            headers: headers(),
+            body: JSON.stringify({ postcode: q })
+          });
+          var data = await res.json();
+          if (my !== seq) return;
+          if (!res.ok) throw new Error(data.error || "Not found");
+          var n = (data.suggestions || []).length;
+          var area = [data.admin_district, data.region, data.postcode].filter(Boolean).join(" · ");
+          input.value = data.postcode || q;
+          render(
+            (area || data.postcode) +
+              (n ? " — " + n + " address suggestion" + (n === 1 ? "" : "s") : " — valid postcode"),
+            true
+          );
+        } catch (e) {
+          if (my !== seq) return;
+          render(e.message || "Lookup failed", false);
+        }
+      }, 450);
+    });
+  }
+
   function headers() {
     return {
       "Content-Type": "application/json",
       "apikey": ANON_KEY,
       "Authorization": "Bearer " + ANON_KEY
     };
+  }
+
+  bindLivePostcode("mb-pickup", "mb-pickup-preview");
+  bindLivePostcode("mb-drop", "mb-drop-preview");
+  if (pre && looksLikeUkPostcode(pre)) {
+    document.getElementById("mb-pickup").dispatchEvent(new Event("input"));
   }
 
   function showStep(n) {

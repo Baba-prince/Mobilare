@@ -21,6 +21,8 @@ export default function HelpPage() {
         subtitle="Answers for customers and drivers. Still stuck? Contact us."
         primaryHref="/contact"
         primaryLabel="Contact support"
+        showPostcodeFinder
+        postcodeCtaLabel="Find address"
       />
       <Section>
         <div className="space-y-4">
