@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { site } from "@/lib/site";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function PortalShell({
   title,
@@ -15,9 +15,7 @@ export function PortalShell({
       <header className="bg-gradient-to-r from-ink via-slate to-teal/10 text-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="font-display font-black text-xl">
-              {site.name}
-            </Link>
+            <BrandLogo href="/" size="sm" className="text-white" />
             <span className="text-sm text-gray-300">{title}</span>
           </div>
           <Link href="/auth/sign-out" className="text-sm font-semibold text-gray-200 hover:text-white">

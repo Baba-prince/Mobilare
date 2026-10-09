@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { marketingNav, site } from "@/lib/site";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { marketingNav } from "@/lib/site";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -10,9 +11,7 @@ export function SiteHeader() {
   return (
     <nav className="bg-gradient-to-r from-ink via-slate to-teal/10 border-b border-teal/20 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
-        <Link href="/" className="font-black text-2xl text-white font-display">
-          {site.name}
-        </Link>
+        <BrandLogo href="/" size="md" priority className="text-white" />
 
         <div className="hidden lg:flex items-center gap-6">
           {marketingNav.map((item) => (

@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   },
   description:
     "Urgent deliveries solved in hours, not days. Real drivers. Real deadlines. Deadline protection for legal, healthcare, estate agents, and more.",
+  icons: {
+    icon: "/brand/mobilare-logo.jpg",
+    apple: "/brand/mobilare-logo.jpg",
+  },
 };
 
 export default function RootLayout({

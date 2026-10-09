@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   footerCompany,
   footerProduct,
@@ -11,7 +12,7 @@ export function SiteFooter() {
     <footer className="bg-[#0D0D0D] text-gray-300">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid md:grid-cols-4 gap-10">
         <div className="space-y-4">
-          <p className="font-display font-black text-2xl text-white">{site.name}</p>
+          <BrandLogo href="/" size="lg" className="text-white" />
           <p className="text-sm font-light leading-relaxed text-gray-400 max-w-xs">
             Urgent deliveries solved in hours, not days. Real drivers. Real deadlines.
           </p>

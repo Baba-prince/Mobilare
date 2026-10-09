@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { site } from "@/lib/site";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const nav = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin-crm", label: "Admin CRM" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/drivers", label: "Drivers" },
@@ -15,9 +16,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#F3F5F7]">
       <div className="min-h-screen grid lg:grid-cols-[260px_1fr]">
         <aside className="bg-ink text-white px-5 py-6 flex flex-col">
-          <Link href="/" className="font-display font-black text-2xl mb-1">
-            {site.name}
-          </Link>
+          <BrandLogo href="/admin" size="md" className="text-white mb-1" />
           <p className="text-xs text-gray-400 mb-8 uppercase tracking-wider">Admin</p>
           <nav className="space-y-1 flex-1">
             {nav.map((item) => (
