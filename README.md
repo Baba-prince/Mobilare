@@ -80,3 +80,13 @@ cd web && npm run dev
 
 Deploy: set Vercel root directory to `web`.
 
+## Deploy (Google VPS)
+
+Primary host target: **Google Compute Engine** (see [`deploy/gcp/README.md`](deploy/gcp/README.md)).
+
+```bash
+export GCP_PROJECT=YOUR_PROJECT_ID
+bash deploy/gcp/create-vm.sh
+# DNS A → VM IP, then setup-vm.sh + deploy.sh + certbot
+```
+
