@@ -1,5 +1,10 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { normalizePostcode } from "../_shared/pricing.ts";
+import {
+  geocodePostcode,
+  googleMapsKey,
+  placesForPostcode,
+} from "../_shared/google_maps.ts";
 
 type Suggestion = {
   id: string;
@@ -9,7 +14,7 @@ type Suggestion = {
   postcode: string;
   lat: number | null;
   lng: number | null;
-  source: "postcodes.io" | "photon";
+  source: "google" | "postcodes.io" | "photon";
 };
 
 Deno.serve(async (req) => {
@@ -47,11 +52,20 @@ Deno.serve(async (req) => {
 
     const r = pcData.result;
     const formatted: string = r.postcode;
-    const lat = r.latitude as number;
-    const lng = r.longitude as number;
+    let lat = r.latitude as number;
+    let lng = r.longitude as number;
+
+    // Prefer Google geocode when configured (production)
+    if (googleMapsKey()) {
+      const g = await geocodePostcode(formatted);
+      if (g) {
+        lat = g.lat;
+        lng = g.lng;
+      }
+    }
+
     const suggestions: Suggestion[] = [];
     const seen = new Set<string>();
-
     const push = (s: Suggestion) => {
       const key = s.label.toLowerCase();
       if (seen.has(key)) return;
@@ -59,7 +73,6 @@ Deno.serve(async (req) => {
       suggestions.push(s);
     };
 
-    // District-level option (always available)
     push({
       id: `pci-${pc}`,
       label: [formatted, r.admin_ward, r.admin_district, r.region, r.country]
@@ -73,80 +86,68 @@ Deno.serve(async (req) => {
       source: "postcodes.io",
     });
 
-    // Photon (OSM) — works from most cloud IPs; Nominatim often blocks datacenters
-    const photonQueries = [
-      formatted,
-      `${r.admin_ward || ""} ${formatted}`.trim(),
-      `${r.admin_district || ""} ${formatted}`.trim(),
-    ];
+    let provider = "postcodes.io+photon";
 
-    for (const q of photonQueries) {
-      const url =
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${lat}&lon=${lng}&limit=12&lang=en`;
-      try {
-        const res = await fetch(url, {
-          headers: { Accept: "application/json" },
-        });
-        if (!res.ok) continue;
-        const data = await res.json() as {
-          features?: Array<{
-            properties?: {
-              osm_id?: number;
-              name?: string;
-              street?: string;
-              housenumber?: string;
-              district?: string;
-              city?: string;
-              state?: string;
-              postcode?: string;
-              country?: string;
-              type?: string;
-            };
-            geometry?: { coordinates?: number[] };
-          }>;
-        };
+    if (googleMapsKey()) {
+      const googlePlaces = await placesForPostcode(formatted, lat, lng);
+      for (const s of googlePlaces) push(s);
+      if (googlePlaces.length) provider = "google+postcodes.io";
+    }
 
-        for (const f of data.features ?? []) {
-          const p = f.properties ?? {};
-          // Prefer GB-ish results near this postcode
-          const featurePc = (p.postcode || "").replace(/\s+/g, "").toUpperCase();
-          const samePc = !featurePc || featurePc === pc ||
-            featurePc.startsWith(pc.slice(0, 3));
-          if (!samePc && p.city && r.admin_district &&
-            !String(p.city).toLowerCase().includes(
-              String(r.admin_district).toLowerCase().split(" ")[0],
-            )) {
-            continue;
-          }
-
-          const line1 = [p.housenumber, p.street || p.name].filter(Boolean)
-            .join(" ") || p.name || p.street;
-          if (!line1) continue;
-
-          const line2 = [
-            p.district,
-            p.city,
-            p.postcode || formatted,
-            p.country,
-          ].filter(Boolean).join(", ");
-
-          const label = [line1, line2].filter(Boolean).join(", ");
-          const coords = f.geometry?.coordinates; // [lng, lat]
-          push({
-            id: `ph-${p.osm_id ?? label.slice(0, 24)}`,
-            label,
-            line1,
-            line2,
-            postcode: p.postcode || formatted,
-            lat: coords?.[1] ?? lat,
-            lng: coords?.[0] ?? lng,
-            source: "photon",
+    // Photon fallback for density when Google missing / sparse
+    if (suggestions.length < 8) {
+      const photonQueries = [
+        formatted,
+        `${r.admin_ward || ""} ${formatted}`.trim(),
+        `${r.admin_district || ""} ${formatted}`.trim(),
+      ];
+      for (const q of photonQueries) {
+        const url =
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${lat}&lon=${lng}&limit=12&lang=en`;
+        try {
+          const res = await fetch(url, {
+            headers: { Accept: "application/json" },
           });
+          if (!res.ok) continue;
+          const data = await res.json() as {
+            features?: Array<{
+              properties?: Record<string, string | number | undefined>;
+              geometry?: { coordinates?: number[] };
+            }>;
+          };
+          for (const f of data.features ?? []) {
+            const p = f.properties ?? {};
+            const line1 = [p.housenumber, p.street || p.name].filter(Boolean)
+              .join(" ") || String(p.name || p.street || "");
+            if (!line1) continue;
+            const line2 = [
+              p.district,
+              p.city,
+              p.postcode || formatted,
+              p.country,
+            ].filter(Boolean).join(", ");
+            const label = [line1, line2].filter(Boolean).join(", ");
+            const coords = f.geometry?.coordinates;
+            push({
+              id: `ph-${p.osm_id ?? label.slice(0, 24)}`,
+              label,
+              line1,
+              line2,
+              postcode: String(p.postcode || formatted),
+              lat: coords?.[1] ?? lat,
+              lng: coords?.[0] ?? lng,
+              source: "photon",
+            });
+          }
+        } catch {
+          /* next */
         }
-      } catch {
-        /* try next query */
+        if (suggestions.length >= 16) break;
       }
-      if (suggestions.length >= 16) break;
+      if (!googleMapsKey()) provider = "postcodes.io+photon";
+      else if (provider === "google+postcodes.io") {
+        provider = "google+postcodes.io+photon";
+      }
     }
 
     return jsonResponse(req, {
@@ -157,9 +158,11 @@ Deno.serve(async (req) => {
       admin_district: r.admin_district,
       region: r.region,
       suggestions: suggestions.slice(0, 16),
-      provider: "postcodes.io+photon",
-      note:
-        "Select a suggested address. Use manual entry if your exact unit is missing. PAF-complete house lists need Ideal Postcodes / getAddress.io.",
+      provider,
+      google_maps: Boolean(googleMapsKey()),
+      note: googleMapsKey()
+        ? "Addresses powered by Google Maps + postcodes.io."
+        : "Set GOOGLE_MAPS_API_KEY for production Places suggestions. Using postcodes.io + Photon fallback.",
     });
   } catch (e) {
     return jsonResponse(req, { error: (e as Error).message }, 500);

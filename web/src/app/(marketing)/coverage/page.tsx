@@ -17,7 +17,7 @@ export default function Page() {
         <div className="grid md:grid-cols-2 gap-6">
           {[
             ["Core metros", "London, Manchester, Birmingham, Leeds, Bristol, and connecting belts."],
-            ["Postcode validation", "Live checks via postcodes.io before you book."],
+            ["Postcode + Maps", "postcodes.io validation with Google Maps geocoding & Places in production."],
             ["Specialist lanes", "Medical and legal routes with verified handoff."],
             ["Expanding weekly", "Driver density grows as demand corridors light up."],
           ].map(([t, d]) => (

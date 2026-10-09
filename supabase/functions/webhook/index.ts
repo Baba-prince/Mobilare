@@ -76,6 +76,40 @@ Deno.serve(async (req) => {
           eta_minutes: 90,
         });
       }
+
+      // Queue confirmation email when Resend is configured (process_queue sends it)
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select(
+          "booking_ref, pickup_postcode, dropoff_postcode, customer_id, customers(email, name)",
+        )
+        .eq("id", bookingId)
+        .maybeSingle();
+
+      const customer = booking?.customers as
+        | { email?: string; name?: string }
+        | { email?: string; name?: string }[]
+        | null;
+      const cust = Array.isArray(customer) ? customer[0] : customer;
+      if (booking && cust?.email) {
+        await supabase.from("outbound_messages").insert({
+          customer_id: booking.customer_id,
+          channel: "email",
+          template_key: "booking_paid",
+          payload: {
+            to: cust.email,
+            subject: `Mobilare booking confirmed — ${booking.booking_ref}`,
+            html:
+              `<p>Hi ${cust.name || "there"},</p>` +
+              `<p>Payment received. Your booking <strong>${booking.booking_ref}</strong> ` +
+              `(${booking.pickup_postcode} → ${booking.dropoff_postcode}) is confirmed.</p>` +
+              `<p><a href="https://mobilare.co.uk/track?ref=${booking.booking_ref}">Track this delivery</a></p>`,
+            body:
+              `Booking ${booking.booking_ref} paid. Track: https://mobilare.co.uk/track?ref=${booking.booking_ref}`,
+          },
+          status: "queued",
+        });
+      }
     }
 
     if (event.type === "checkout.session.expired") {

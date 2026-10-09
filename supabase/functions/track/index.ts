@@ -1,5 +1,10 @@
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
 import { serviceClient } from "../_shared/supabase.ts";
+import {
+  directionsRoute,
+  geocodePostcode,
+  googleMapsKey,
+} from "../_shared/google_maps.ts";
 
 Deno.serve(async (req) => {
   const opt = handleOptions(req);
@@ -22,6 +27,7 @@ Deno.serve(async (req) => {
     .from("bookings")
     .select(
       `booking_ref, status, service_type, pickup_postcode, dropoff_postcode,
+       pickup_address, dropoff_address,
        amount_vat_inclusive_pence, currency, created_at,
        jobs ( status, eta_minutes, driver_name, updated_at,
          proof_of_delivery ( photo_url, lat, lng, captured_at ) )`,
@@ -43,12 +49,32 @@ Deno.serve(async (req) => {
   const pods = job?.proof_of_delivery;
   const pod = Array.isArray(pods) ? pods[0] : pods;
 
+  let pickup: { lat: number; lng: number } | null = null;
+  let dropoff: { lat: number; lng: number } | null = null;
+  let route: Awaited<ReturnType<typeof directionsRoute>> = null;
+
+  if (googleMapsKey()) {
+    pickup = await geocodePostcode(data.pickup_postcode);
+    dropoff = await geocodePostcode(data.dropoff_postcode);
+    if (pickup && dropoff) {
+      route = await directionsRoute(pickup, dropoff);
+    }
+  }
+
   return jsonResponse(req, {
     booking_ref: data.booking_ref,
     status: data.status,
     service_type: data.service_type,
     pickup_postcode: data.pickup_postcode,
     dropoff_postcode: data.dropoff_postcode,
+    pickup_address: data.pickup_address,
+    dropoff_address: data.dropoff_address,
+    map: {
+      provider: googleMapsKey() ? "google" : null,
+      pickup,
+      dropoff,
+      route,
+    },
     job: job
       ? {
         status: job.status,

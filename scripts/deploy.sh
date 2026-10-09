@@ -2,31 +2,18 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-if ! command -v supabase >/dev/null 2>&1; then
-  echo "Install Supabase CLI first: https://supabase.com/docs/guides/cli"
-  exit 1
-fi
+PROJECT_REF="${SUPABASE_PROJECT_REF:-opvpkxvbvhltchxwlinr}"
 
 echo "Applying migrations..."
-supabase db push
+supabase db push --project-ref "$PROJECT_REF"
 
-echo "Setting secrets from .env (if present)..."
-if [[ -f .env ]]; then
-  # shellcheck disable=SC1091
-  set -a; source .env; set +a
-  supabase secrets set \
-    STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" \
-    STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-}" \
-    SUCCESS_URL="${SUCCESS_URL:-https://mobilare.co.uk/booking-success}" \
-    CANCEL_URL="${CANCEL_URL:-https://mobilare.co.uk/booking-cancel}" \
-    CORS_ORIGIN="${CORS_ORIGIN:-https://mobilare.co.uk,https://www.mobilare.co.uk}"
-fi
+echo "Syncing secrets..."
+bash scripts/sync-production-secrets.sh
 
 echo "Deploying functions..."
-supabase functions deploy quote
-supabase functions deploy checkout
-supabase functions deploy webhook
-supabase functions deploy track
+for fn in quote checkout webhook track addresses maps mcl_bot process_queue import_customers; do
+  echo "==> $fn"
+  supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+done
 
-echo "Done. Configure Stripe webhook → …/functions/v1/webhook"
-echo "Open artifacts/phase-monitor.html to update readiness."
+echo "Done."
