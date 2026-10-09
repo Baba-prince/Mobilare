@@ -11,6 +11,10 @@ type Props = {
   className?: string;
 };
 
+type MapLike = {
+  fitBounds: (bounds: unknown, padding?: number) => void;
+};
+
 export function RouteMap({ pickup, dropoff, className = "" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +40,7 @@ export function RouteMap({ pickup, dropoff, className = "" }: Props) {
           styles: [
             { featureType: "poi", stylers: [{ visibility: "off" }] },
           ],
-        });
+        }) as MapLike;
         const bounds = new g.maps.LatLngBounds();
         if (pickup) {
           new g.maps.Marker({
@@ -78,7 +82,9 @@ export function RouteMap({ pickup, dropoff, className = "" }: Props) {
 
   if (error) {
     return (
-      <div className={`rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 ${className}`}>
+      <div
+        className={`rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 ${className}`}
+      >
         {error}
       </div>
     );
@@ -86,7 +92,9 @@ export function RouteMap({ pickup, dropoff, className = "" }: Props) {
 
   if (!pickup && !dropoff) {
     return (
-      <div className={`rounded-2xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 ${className}`}>
+      <div
+        className={`rounded-2xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 ${className}`}
+      >
         Map appears when pickup / drop-off coordinates are available.
       </div>
     );
