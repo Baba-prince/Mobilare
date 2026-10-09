@@ -20,9 +20,14 @@ export default function AdminHomePage() {
             Dashboard
           </h1>
         </div>
-        <Link href="/admin/bookings" className="btn-primary">
-          View bookings
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/admin-crm" className="btn-primary">
+            Open Admin CRM
+          </Link>
+          <Link href="/admin/bookings" className="btn-secondary">
+            View bookings
+          </Link>
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
