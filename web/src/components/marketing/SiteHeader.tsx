@@ -23,6 +23,9 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <Link href="/portal" className="text-sm text-gray-300 hover:text-white font-medium">
+            Portal
+          </Link>
           <Link href="/auth/sign-in" className="text-sm text-gray-300 hover:text-white font-medium">
             Sign in
           </Link>
@@ -53,6 +56,9 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <Link href="/portal" className="block py-2 text-gray-200" onClick={() => setOpen(false)}>
+            Portal
+          </Link>
           <Link href="/auth/sign-in" className="block py-2 text-gray-200" onClick={() => setOpen(false)}>
             Sign in
           </Link>

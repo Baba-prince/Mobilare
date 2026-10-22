@@ -3,12 +3,15 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const nav = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/messages", label: "Inbox" },
+  { href: "/admin/map", label: "Dispatch map" },
   { href: "/admin-crm", label: "Admin CRM" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/drivers", label: "Drivers" },
   { href: "/admin/billing", label: "Billing" },
   { href: "/admin/settings", label: "Settings" },
+  { href: "/portal", label: "Portal" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

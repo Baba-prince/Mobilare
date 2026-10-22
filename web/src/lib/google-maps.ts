@@ -4,6 +4,8 @@ export type GoogleMapsApi = {
   maps: {
     Map: new (el: HTMLElement, opts: Record<string, unknown>) => {
       fitBounds: (bounds: unknown, padding?: number) => void;
+      setCenter: (c: { lat: number; lng: number }) => void;
+      setZoom: (z: number) => void;
     };
     Marker: new (opts: Record<string, unknown>) => unknown;
     LatLngBounds: new () => {
@@ -40,6 +42,10 @@ export function loadGoogleMaps(
       else reject(new Error("Google Maps failed to initialize"));
     };
     if (existing) {
+      if (readGoogle()?.maps) {
+        done();
+        return;
+      }
       existing.addEventListener("load", done);
       existing.addEventListener("error", () => reject(new Error("Maps script failed")));
       return;

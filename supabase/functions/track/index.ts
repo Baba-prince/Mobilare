@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       `booking_ref, status, service_type, pickup_postcode, dropoff_postcode,
        pickup_address, dropoff_address,
        amount_vat_inclusive_pence, currency, created_at,
-       jobs ( status, eta_minutes, driver_name, updated_at,
+       jobs ( status, eta_minutes, driver_name, last_lat, last_lng, updated_at,
          proof_of_delivery ( photo_url, lat, lng, captured_at ) )`,
     );
 
@@ -61,6 +61,11 @@ Deno.serve(async (req) => {
     }
   }
 
+  const driverLive =
+    job?.last_lat != null && job?.last_lng != null
+      ? { lat: Number(job.last_lat), lng: Number(job.last_lng) }
+      : null;
+
   return jsonResponse(req, {
     booking_ref: data.booking_ref,
     status: data.status,
@@ -74,12 +79,15 @@ Deno.serve(async (req) => {
       pickup,
       dropoff,
       route,
+      driver: driverLive,
     },
     job: job
       ? {
         status: job.status,
         eta_minutes: job.eta_minutes,
         driver_name: job.driver_name,
+        last_lat: job.last_lat ?? null,
+        last_lng: job.last_lng ?? null,
         updated_at: job.updated_at,
       }
       : null,

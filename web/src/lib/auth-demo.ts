@@ -31,6 +31,12 @@ export function clearDemoUser() {
 }
 
 export function portalForRole(role: UserRole) {
+  // Dual-access hub (RoadAngel-style) — role doors on /portal
+  void role;
+  return "/portal";
+}
+
+export function homeForRole(role: UserRole) {
   if (role === "admin") return "/admin";
   if (role === "driver") return "/driver";
   return "/account";

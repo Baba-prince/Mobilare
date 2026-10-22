@@ -21,8 +21,14 @@ export default function AdminHomePage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href="/admin-crm" className="btn-primary">
-            Open Admin CRM
+          <Link href="/admin/messages" className="btn-primary">
+            CRM inbox
+          </Link>
+          <Link href="/admin/map" className="btn-secondary">
+            Dispatch map
+          </Link>
+          <Link href="/admin-crm" className="btn-secondary">
+            Command Centre
           </Link>
           <Link href="/admin/bookings" className="btn-secondary">
             View bookings
@@ -59,6 +65,8 @@ export default function AdminHomePage() {
           <p className="font-black text-gray-900 mb-4">Quick links</p>
           <div className="grid gap-2">
             {[
+              ["/admin/messages", "Customer & driver inbox"],
+              ["/portal", "Three-entrance portal"],
               ["/admin/billing", "Billing & payouts"],
               ["/admin/settings", "Platform settings"],
               ["/admin/drivers", "Driver approvals"],

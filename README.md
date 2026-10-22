@@ -18,6 +18,8 @@ Or open `artifacts/phase-monitor.html` directly (embedded readiness snapshot).
 |-----|---------|
 | [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md) | Locked phase plan |
 | [`docs/UI_GAP_ANALYSIS.md`](docs/UI_GAP_ANALYSIS.md) | Live UI investigation + gaps |
+| [`docs/PORTAL_MESSENGER.md`](docs/PORTAL_MESSENGER.md) | Users / Drivers / CRM Tri-inbox |
+| [`docs/GOOGLE_MAPS.md`](docs/GOOGLE_MAPS.md) | Maps JS · Places · Routes · live GPS |
 | [`artifacts/phase-monitor.html`](artifacts/phase-monitor.html) | Readiness web artifact |
 | [`squarespace/INSTALL.md`](squarespace/INSTALL.md) | Embed install steps |
 
