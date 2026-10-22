@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   AddressSuggestion,
   AddressesLookup,
+  autocompletePostcodes,
   lookupPostcode,
   looksLikeUkPostcode,
 } from "@/lib/addresses";
@@ -16,7 +17,6 @@ type Props = {
   ctaLabel?: string;
   placeholder?: string;
   initialPostcode?: string;
-  /** When true, selecting a suggestion navigates to /book with postcode (+ optional address). */
   bookOnSelect?: boolean;
   className?: string;
 };
@@ -32,11 +32,14 @@ export function PostcodeFinder({
   const router = useRouter();
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [postcode, setPostcode] = useState(initialPostcode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AddressesLookup | null>(null);
+  const [liveSuggestions, setLiveSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"typing" | "full">("typing");
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -45,6 +48,64 @@ export function PostcodeFinder({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  async function runAutocomplete(raw: string) {
+    const compact = raw.replace(/\s+/g, "");
+    if (compact.length < 2) {
+      setLiveSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    // Full postcode → full address lookup
+    if (looksLikeUkPostcode(raw) && compact.length >= 5 && /[A-Z]{2}$/i.test(compact)) {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await lookupPostcode(raw);
+        setResult(data);
+        setLiveSuggestions(data.suggestions || []);
+        setMode("full");
+        setOpen(true);
+        if (data.postcode) setPostcode(data.postcode);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Lookup failed");
+        setOpen(false);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await autocompletePostcodes(raw);
+      setLiveSuggestions(list);
+      setResult(null);
+      setMode("typing");
+      setOpen(list.length > 0);
+    } catch {
+      setLiveSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function onTyped(value: string) {
+    const next = value.toUpperCase();
+    setPostcode(next);
+    setError(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void runAutocomplete(next);
+    }, 280);
+  }
 
   async function runLookup(raw: string) {
     const q = raw.trim();
@@ -57,10 +118,13 @@ export function PostcodeFinder({
     try {
       const data = await lookupPostcode(q);
       setResult(data);
+      setLiveSuggestions(data.suggestions || []);
       setPostcode(data.postcode || q.toUpperCase());
+      setMode("full");
       setOpen(true);
     } catch (e) {
       setResult(null);
+      setLiveSuggestions([]);
       setError(e instanceof Error ? e.message : "Lookup failed");
       setOpen(false);
     } finally {
@@ -80,9 +144,22 @@ export function PostcodeFinder({
       return;
     }
     const params = new URLSearchParams({ postcode: pc });
-    if (suggestion?.label) params.set("address", suggestion.label);
-    if (suggestion?.line1) params.set("line1", suggestion.line1);
+    if (suggestion?.label && mode === "full") params.set("address", suggestion.label);
+    if (suggestion?.line1 && mode === "full") params.set("line1", suggestion.line1);
     router.push(`/book?${params.toString()}`);
+  }
+
+  function pickSuggestion(s: AddressSuggestion) {
+    setPostcode(s.postcode || postcode);
+    setOpen(false);
+    if (mode === "typing") {
+      // Selected a postcode from autocomplete — expand to addresses then optionally book
+      void (async () => {
+        await runLookup(s.postcode);
+      })();
+      return;
+    }
+    if (bookOnSelect) goBook(s);
   }
 
   const inputClass =
@@ -94,26 +171,25 @@ export function PostcodeFinder({
     result &&
     [result.admin_district, result.region, result.postcode].filter(Boolean).join(" · ");
 
+  const showList = open && liveSuggestions.length > 0;
+
   return (
     <div ref={wrapRef} className={`relative w-full max-w-xl ${className}`}>
       <form onSubmit={onSubmit} className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           name="postcode"
-          autoComplete="postal-code"
+          autoComplete="off"
           spellCheck={false}
           placeholder={placeholder}
           value={postcode}
           aria-autocomplete="list"
           aria-controls={listId}
-          aria-expanded={open}
-          onChange={(e) => {
-            setPostcode(e.target.value.toUpperCase());
-            setError(null);
-          }}
-          onBlur={() => {
-            const q = postcode.trim();
-            if (q && looksLikeUkPostcode(q) && !result) void runLookup(q);
+          aria-expanded={showList}
+          role="combobox"
+          onChange={(e) => onTyped(e.target.value)}
+          onFocus={() => {
+            if (liveSuggestions.length) setOpen(true);
           }}
           className={inputClass}
         />
@@ -128,7 +204,7 @@ export function PostcodeFinder({
         </p>
       ) : null}
 
-      {open && result ? (
+      {showList ? (
         <div
           id={listId}
           role="listbox"
@@ -136,28 +212,29 @@ export function PostcodeFinder({
         >
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <p className="text-xs font-semibold uppercase tracking-wider text-teal">
-              Coverage confirmed
+              {mode === "typing" ? "Postcode suggestions" : "Coverage confirmed"}
             </p>
-            <p className="text-sm font-medium text-gray-900 mt-0.5">{meta}</p>
-            {result.provider ? (
-              <p className="text-[11px] text-gray-500 mt-1">via {result.provider}</p>
-            ) : null}
+            {mode === "full" && meta ? (
+              <p className="text-sm font-medium text-gray-900 mt-0.5">{meta}</p>
+            ) : (
+              <p className="text-sm text-gray-600 mt-0.5">
+                Keep typing or pick a match — e.g. OL8…
+              </p>
+            )}
           </div>
           <ul className="max-h-64 overflow-auto">
-            {(result.suggestions || []).slice(0, 8).map((s) => (
+            {liveSuggestions.slice(0, 8).map((s) => (
               <li key={s.id}>
                 <button
                   type="button"
                   role="option"
+                  aria-selected={false}
                   className="w-full text-left px-4 py-3 hover:bg-teal/5 transition border-b border-gray-50 last:border-0"
-                  onClick={() => {
-                    setPostcode(s.postcode || postcode);
-                    setOpen(false);
-                    if (bookOnSelect) goBook(s);
-                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pickSuggestion(s)}
                 >
                   <span className="block text-sm font-semibold text-gray-900">
-                    {s.line1 || s.label}
+                    {s.line1 || s.postcode || s.label}
                   </span>
                   <span className="block text-xs text-gray-500 mt-0.5">
                     {s.line2 || s.label}
@@ -165,28 +242,25 @@ export function PostcodeFinder({
                 </button>
               </li>
             ))}
-            {!(result.suggestions || []).length ? (
-              <li className="px-4 py-3 text-sm text-gray-600">
-                Postcode valid — no street matches. Continue to book with this postcode.
-              </li>
-            ) : null}
           </ul>
-          <div className="p-3 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn-primary text-sm px-4 py-2"
-              onClick={() => goBook()}
-            >
-              Book with {result.postcode}
-            </button>
-            <button
-              type="button"
-              className="btn-secondary text-sm px-4 py-2"
-              onClick={() => setOpen(false)}
-            >
-              Close
-            </button>
-          </div>
+          {mode === "full" && result ? (
+            <div className="p-3 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-primary text-sm px-4 py-2"
+                onClick={() => goBook()}
+              >
+                Book with {result.postcode}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary text-sm px-4 py-2"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

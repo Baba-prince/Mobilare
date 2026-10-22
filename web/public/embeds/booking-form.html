@@ -53,6 +53,18 @@
     background:#f7fafb; font-size:.78rem; color:#5a6570; display:none; }
   .mb-book .pc-preview.show { display:block; }
   .mb-book .pc-preview strong { color:var(--mb-ink); }
+  .mb-book .pc-wrap { position:relative; }
+  .mb-book .pc-dd {
+    display:none; position:absolute; left:0; right:0; top:100%; z-index:40;
+    margin-top:-.55rem; max-height:220px; overflow:auto; background:#fff;
+    border:1px solid #c9d4dc; border-radius:12px; box-shadow:0 12px 30px rgba(15,20,25,.12); }
+  .mb-book .pc-dd.show { display:block; }
+  .mb-book .pc-dd button {
+    display:block; width:100%; text-align:left; background:#fff; color:var(--mb-ink);
+    border:0; border-radius:0; border-bottom:1px solid #eef2f4; padding:.7rem .85rem;
+    font-size:.84rem; font-weight:500; }
+  .mb-book .pc-dd button:hover { background:rgba(13,110,127,.08); }
+  .mb-book .pc-dd button .muted { display:block; color:#6b7782; font-size:.72rem; margin-top:.15rem; }
 </style>
 <div class="mb-book" id="mb-book">
   <h2>Book Mobilare</h2>
@@ -88,14 +100,16 @@
       </select>
     </div>
     <div class="row">
-      <div>
+      <div class="pc-wrap">
         <label for="mb-pickup">Pickup postcode</label>
-        <input id="mb-pickup" placeholder="e.g. EC1A 1BB" autocomplete="postal-code" />
+        <input id="mb-pickup" placeholder="Start typing e.g. OL8…" autocomplete="off" />
+        <div class="pc-dd" id="mb-pickup-dd" role="listbox"></div>
         <div class="pc-preview" id="mb-pickup-preview" aria-live="polite"></div>
       </div>
-      <div>
+      <div class="pc-wrap">
         <label for="mb-drop">Drop-off postcode</label>
-        <input id="mb-drop" placeholder="e.g. SW1A 1AA" autocomplete="postal-code" />
+        <input id="mb-drop" placeholder="Start typing e.g. M1…" autocomplete="off" />
+        <div class="pc-dd" id="mb-drop-dd" role="listbox"></div>
         <div class="pc-preview" id="mb-drop-preview" aria-live="polite"></div>
       </div>
     </div>
@@ -140,8 +154,8 @@
 </div>
 <script>
 (function () {
-  var API_BASE = "https://opvpkxvbvhltchxwlinr.supabase.co/functions/v1";
-  var ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wdnBreHZidmhsdGNoeHdsaW5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0Nzc0NDAsImV4cCI6MjEwNzA1MzQ0MH0.Wm8KyMkKncu_0cPgFbzwgXDvXyeGgpHBTJtuEZCv9LY";
+  // Same-origin Next.js APIs (do not hardcode dead Supabase project URLs)
+  var API_BASE = "/api/booking";
 
   var quoteId = null;
   var pickupSuggestions = [];
@@ -185,9 +199,14 @@
       /^[A-Z]{1,2}\d[A-Z\d]?$/i.test(compact);
   }
 
-  function bindLivePostcode(inputId, previewId) {
+  function headers() {
+    return { "Content-Type": "application/json" };
+  }
+
+  function bindLivePostcode(inputId, previewId, ddId) {
     var input = document.getElementById(inputId);
     var preview = document.getElementById(previewId);
+    var dd = document.getElementById(ddId);
     var timer = null;
     var seq = 0;
     function render(msg, ok) {
@@ -196,19 +215,50 @@
         ? "<strong>" + escapeHtml(msg) + "</strong>"
         : escapeHtml(msg);
     }
+    function hideDd() { dd.classList.remove("show"); dd.innerHTML = ""; }
+    function showDd(items) {
+      dd.innerHTML = "";
+      if (!items.length) { hideDd(); return; }
+      items.forEach(function (s) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.innerHTML =
+          "<strong>" + escapeHtml(s.postcode || s.line1 || s.label) + "</strong>" +
+          "<span class='muted'>" + escapeHtml(s.line2 || s.label || "") + "</span>";
+        btn.onclick = function () {
+          input.value = s.postcode || s.line1 || "";
+          hideDd();
+          input.dispatchEvent(new Event("input"));
+        };
+        dd.appendChild(btn);
+      });
+      dd.classList.add("show");
+    }
     input.addEventListener("input", function () {
       input.value = input.value.toUpperCase();
       clearTimeout(timer);
       var q = input.value.trim();
-      if (!q) { preview.classList.remove("show"); preview.innerHTML = ""; return; }
-      if (!looksLikeUkPostcode(q) || q.replace(/\s+/g, "").length < 5) {
-        render("Keep typing a full UK postcode…", false);
+      var compact = q.replace(/\s+/g, "");
+      if (!q) {
+        preview.classList.remove("show");
+        preview.innerHTML = "";
+        hideDd();
         return;
       }
-      render("Looking up addresses…", false);
       var my = ++seq;
       timer = setTimeout(async function () {
         try {
+          // Partial → autocomplete dropdown (OL8…)
+          if (compact.length >= 2 && !(looksLikeUkPostcode(q) && compact.length >= 5 && /[A-Z]{2}$/i.test(compact))) {
+            var ac = await fetch(API_BASE + "/addresses?q=" + encodeURIComponent(q));
+            var acData = await ac.json();
+            if (my !== seq) return;
+            showDd(acData.suggestions || []);
+            render("Select a postcode from the list…", false);
+            return;
+          }
+          hideDd();
+          render("Looking up addresses…", false);
           var res = await fetch(API_BASE + "/addresses", {
             method: "POST",
             headers: headers(),
@@ -227,22 +277,18 @@
           );
         } catch (e) {
           if (my !== seq) return;
+          hideDd();
           render(e.message || "Lookup failed", false);
         }
-      }, 450);
+      }, 280);
+    });
+    document.addEventListener("mousedown", function (e) {
+      if (!dd.contains(e.target) && e.target !== input) hideDd();
     });
   }
 
-  function headers() {
-    return {
-      "Content-Type": "application/json",
-      "apikey": ANON_KEY,
-      "Authorization": "Bearer " + ANON_KEY
-    };
-  }
-
-  bindLivePostcode("mb-pickup", "mb-pickup-preview");
-  bindLivePostcode("mb-drop", "mb-drop-preview");
+  bindLivePostcode("mb-pickup", "mb-pickup-preview", "mb-pickup-dd");
+  bindLivePostcode("mb-drop", "mb-drop-preview", "mb-drop-dd");
   if (pre && looksLikeUkPostcode(pre)) {
     document.getElementById("mb-pickup").dispatchEvent(new Event("input"));
   }
@@ -356,8 +402,8 @@
         headers: headers(),
         body: JSON.stringify(payload)
       });
-      var data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Quote failed");
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.error || ("Quote failed (" + res.status + ")"));
       quoteId = data.quote_id;
 
       var miles = data.estimated_miles != null ? ("~" + data.estimated_miles + " road mi") : "";
@@ -404,7 +450,12 @@
       if (!document.getElementById("mb-name").value.trim()) throw new Error("Enter your name");
       if (!document.getElementById("mb-email").value.trim()) throw new Error("Enter your email");
 
-      var res = await fetch(API_BASE + "/checkout", {
+      // Checkout still requires Supabase edge + Stripe; fail clearly until wired
+      var checkoutBase = (window.__MOBILARE_FUNCTIONS_BASE || "");
+      if (!checkoutBase) {
+        throw new Error("Quote ready — payment backend reconnecting. Contact bookings@mobilare.co.uk or try again shortly.");
+      }
+      var res = await fetch(checkoutBase + "/checkout", {
         method: "POST",
         headers: headers(),
         body: JSON.stringify({

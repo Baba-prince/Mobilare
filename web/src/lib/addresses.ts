@@ -109,10 +109,59 @@ async function lookupViaPostcodesIo(postcode: string): Promise<AddressesLookup> 
   };
 }
 
+/** As-you-type postcode suggestions (OL8 → matching postcodes). */
+export async function autocompletePostcodes(query: string): Promise<AddressSuggestion[]> {
+  const q = query.trim();
+  if (q.replace(/\s+/g, "").length < 2) return [];
+
+  // Prefer same-origin API (works on mobilare.co.uk without Supabase functions)
+  try {
+    const res = await fetch(`/api/booking/addresses?q=${encodeURIComponent(q)}`);
+    if (res.ok) {
+      const data = (await res.json()) as { suggestions?: AddressSuggestion[] };
+      if (data.suggestions?.length) return data.suggestions;
+    }
+  } catch {
+    /* fall through */
+  }
+
+  // Direct postcodes.io autocomplete
+  const compact = q.replace(/\s+/g, "").toUpperCase();
+  const res = await fetch(
+    `https://api.postcodes.io/postcodes/${encodeURIComponent(compact)}/autocomplete`,
+  );
+  const data = await res.json();
+  const list: string[] = Array.isArray(data.result) ? data.result : [];
+  return list.slice(0, 8).map((pc) => ({
+    id: `ac-${pc}`,
+    label: pc,
+    line1: pc,
+    line2: "UK postcode",
+    postcode: pc,
+    lat: null,
+    lng: null,
+    source: "autocomplete",
+  }));
+}
+
 /** UK postcode lookup via Mobilare /addresses edge function (Google + postcodes.io). */
 export async function lookupPostcode(postcode: string): Promise<AddressesLookup> {
   const q = postcode.trim();
   if (!q) throw new Error("Enter a UK postcode");
+
+  // Same-origin API first (production web host)
+  try {
+    const res = await fetch("/api/booking/addresses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postcode: q }),
+    });
+    const data = (await res.json()) as AddressesLookup;
+    if (res.ok) return data;
+    if (res.status === 422) throw new Error(data.error || "Postcode not found");
+  } catch (e) {
+    if (e instanceof Error && /Postcode not found/i.test(e.message)) throw e;
+  }
 
   const cfg = supabaseConfig();
   if (cfg) {
@@ -129,7 +178,6 @@ export async function lookupPostcode(postcode: string): Promise<AddressesLookup>
       const data = (await res.json()) as AddressesLookup & { message?: string };
       if (res.ok) return data;
 
-      // Function missing / project not wired → fall through to public APIs
       const missingFn =
         res.status === 404 ||
         data.code === "NOT_FOUND" ||
@@ -138,7 +186,6 @@ export async function lookupPostcode(postcode: string): Promise<AddressesLookup>
         throw new Error(data.error || data.message || "Postcode lookup failed");
       }
     } catch (e) {
-      // Network / CORS / gateway errors → try public fallback
       if (e instanceof Error && /Postcode lookup failed|postcode required/i.test(e.message)) {
         throw e;
       }
