@@ -82,7 +82,7 @@ export function MessengerApp({
           <p className="text-xs text-gray-500 mt-0.5">
             As {FACE_LABEL[face]}
             {unreadTotal > 0 ? ` · ${unreadTotal} unread` : ""}
-            {mode === "demo" ? " · demo mode" : " · live"}
+            {mode === "portal" ? " · live portal" : ` · ${mode}`}
           </p>
         </div>
         {(face === "customer" || face === "driver") && (

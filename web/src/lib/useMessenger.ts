@@ -1,25 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import {
-  mapConversation,
-  mapMessage,
-  type MessengerFace,
-  type MessengerMessage,
-  type MessengerThread,
-} from "@/lib/messenger";
-import {
-  ensureDemoThread,
-  getDemoSnapshot,
-  markDemoRead,
-  messagesForThread as demoMessages,
-  sendDemoMessage,
-  subscribeDemoMessenger,
-  threadsForFace as demoThreads,
-} from "@/lib/messenger-demo";
+import type { MessengerFace, MessengerMessage, MessengerThread } from "@/lib/messenger";
+import { getPortalActor } from "@/lib/portal-actor";
 
-type ProfileLite = { id: string; role: string; full_name: string | null };
+type Mode = "portal" | "demo";
+
+function headers(face: MessengerFace, actor: string) {
+  return {
+    "Content-Type": "application/json",
+    "x-mobilare-face": face,
+    "x-mobilare-actor": actor,
+  };
+}
 
 export function useMessenger(face: MessengerFace) {
   const [threads, setThreads] = useState<MessengerThread[]>([]);
@@ -27,161 +20,75 @@ export function useMessenger(face: MessengerFace) {
     {},
   );
   const [activeId, setActiveId] = useState<string | undefined>();
-  const [profile, setProfile] = useState<ProfileLite | null>(null);
-  const [mode, setMode] = useState<"live" | "demo">("demo");
+  const [mode, setMode] = useState<Mode>("portal");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [actor, setActor] = useState<string>("");
 
-  const refreshDemo = useCallback(() => {
-    const list = demoThreads(face);
-    setThreads(list);
-    setMessagesByThread((prev) => {
-      const next = { ...prev };
-      for (const t of list) next[t.id] = demoMessages(t.id);
-      return next;
-    });
-    setMode("demo");
-    setLoading(false);
+  useEffect(() => {
+    setActor(getPortalActor(face));
   }, [face]);
 
-  const loadLive = useCallback(async () => {
-    const supabase = createClient();
-    if (!supabase) {
-      refreshDemo();
-      return;
-    }
-
+  const loadThreads = useCallback(async () => {
+    if (!actor) return;
     setLoading(true);
     setError(null);
-
-    const { data: sessionData } = await supabase.auth.getSession();
-    const user = sessionData.session?.user;
-    if (!user) {
-      refreshDemo();
-      return;
+    try {
+      const res = await fetch("/api/messaging/threads", {
+        headers: headers(face, actor),
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load threads");
+      const list = (data.threads || []) as MessengerThread[];
+      setThreads(list);
+      setMode("portal");
+      if (!activeId && list[0]) setActiveId(list[0].id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Load failed");
+      setMode("demo");
+    } finally {
+      setLoading(false);
     }
+  }, [actor, face, activeId]);
 
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("id, role, full_name")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const resolved: ProfileLite = {
-      id: user.id,
-      role: (prof?.role as string) || (user.user_metadata?.role as string) || "customer",
-      full_name: (prof?.full_name as string) || null,
-    };
-    setProfile(resolved);
-
-    let query = supabase
-      .from("conversations")
-      .select(
-        "id, title, kind, type, status, customer_profile_id, driver_profile_id, booking_id, last_message_at, last_message_preview, created_at",
-      )
-      .order("last_message_at", { ascending: false, nullsFirst: false });
-
-    if (face === "customer") {
-      query = query.eq("customer_profile_id", user.id).eq("kind", "support");
-    } else if (face === "driver") {
-      query = query.eq("driver_profile_id", user.id).in("kind", ["driver_ops", "job"]);
-    }
-    // crm: all rows RLS allows
-
-    const { data: rows, error: qErr } = await query;
-    if (qErr) {
-      setError(qErr.message);
-      refreshDemo();
-      return;
-    }
-
-    const mapped = (rows || []).map((r) => mapConversation(r as Record<string, unknown>, face, 0));
-    setThreads(mapped);
-    setMode("live");
-    setLoading(false);
-
-    if (mapped[0] && !activeId) setActiveId(mapped[0].id);
-  }, [face, refreshDemo, activeId]);
-
-  const loadMessages = useCallback(
-    async (conversationId: string) => {
-      if (mode !== "live") {
-        setMessagesByThread((prev) => ({
-          ...prev,
-          [conversationId]: demoMessages(conversationId),
-        }));
-        return;
-      }
-      const supabase = createClient();
-      if (!supabase) return;
-      const { data, error: mErr } = await supabase
-        .from("messages")
-        .select(
-          "id, conversation_id, sender_type, sender_face, sender_profile_id, body, created_at",
-        )
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
-      if (mErr) {
-        setError(mErr.message);
-        return;
-      }
+  const loadMessages = useCallback(async (conversationId: string) => {
+    try {
+      const res = await fetch(
+        `/api/messaging/messages?threadId=${encodeURIComponent(conversationId)}`,
+        { cache: "no-store" },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load messages");
       setMessagesByThread((prev) => ({
         ...prev,
-        [conversationId]: (data || []).map((r) => mapMessage(r as Record<string, unknown>)),
+        [conversationId]: (data.messages || []) as MessengerMessage[],
       }));
-      await supabase.rpc("mark_conversation_read", { p_conversation_id: conversationId });
-    },
-    [mode],
-  );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load messages");
+    }
+  }, []);
 
   useEffect(() => {
-    void loadLive();
-  }, [loadLive]);
-
-  useEffect(() => {
-    if (mode !== "demo") return;
-    refreshDemo();
-    return subscribeDemoMessenger(refreshDemo);
-  }, [mode, refreshDemo]);
+    if (!actor) return;
+    void loadThreads();
+  }, [actor, loadThreads]);
 
   useEffect(() => {
     if (!activeId) return;
     void loadMessages(activeId);
   }, [activeId, loadMessages]);
 
-  // Realtime
+  // Near-realtime poll (shared server store across portals)
   useEffect(() => {
-    if (mode !== "live") return;
-    const supabase = createClient();
-    if (!supabase) return;
-
-    const channel = supabase
-      .channel(`mobilare-messenger-${face}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        (payload) => {
-          const row = payload.new as Record<string, unknown> | null;
-          if (!row?.conversation_id) return;
-          const cid = String(row.conversation_id);
-          if (cid === activeId) void loadMessages(cid);
-          void loadLive();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "conversations" },
-        () => {
-          void loadLive();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [mode, face, activeId, loadLive, loadMessages]);
+    if (!actor || mode !== "portal") return;
+    const id = window.setInterval(() => {
+      void loadThreads();
+      if (activeId) void loadMessages(activeId);
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [actor, mode, activeId, loadThreads, loadMessages]);
 
   const messages = useMemo(
     () => (activeId ? messagesByThread[activeId] || [] : []),
@@ -194,55 +101,21 @@ export function useMessenger(face: MessengerFace) {
   );
 
   async function ensureThread(subject?: string, context?: string) {
+    if (!actor) return undefined;
     setBusy(true);
     setError(null);
     try {
-      if (mode !== "live") {
-        const t = ensureDemoThread(face === "crm" ? "customer" : face);
-        setActiveId(t.id);
-        refreshDemo();
-        return t.id;
-      }
-      const supabase = createClient();
-      if (!supabase) throw new Error("Supabase unavailable");
-
-      if (face === "driver") {
-        const { data, error: rpcErr } = await supabase.rpc("open_driver_thread", {
-          p_subject: subject || "Driver desk",
-          p_context: context || null,
-        });
-        if (rpcErr) throw rpcErr;
-        const id = String((data as { id: string }).id);
-        await loadLive();
-        setActiveId(id);
-        return id;
-      }
-
-      if (face === "customer") {
-        const { data, error: rpcErr } = await supabase.rpc("open_support_thread", {
-          p_subject: subject || "Support",
-          p_context: context || null,
-        });
-        if (rpcErr) throw rpcErr;
-        const id = String((data as { id: string }).id);
-        await loadLive();
-        setActiveId(id);
-        return id;
-      }
-
-      // CRM: pick first or create support for self if empty
-      if (threads[0]) {
-        setActiveId(threads[0].id);
-        return threads[0].id;
-      }
-      const { data, error: rpcErr } = await supabase.rpc("open_support_thread", {
-        p_subject: "Support",
-        p_context: "CRM inbox ready",
+      const res = await fetch("/api/messaging/threads", {
+        method: "POST",
+        headers: headers(face, actor),
+        body: JSON.stringify({ subject, context }),
       });
-      if (rpcErr) throw rpcErr;
-      const id = String((data as { id: string }).id);
-      await loadLive();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not open thread");
+      const id = String(data.thread.id);
+      await loadThreads();
       setActiveId(id);
+      await loadMessages(id);
       return id;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not open thread");
@@ -254,30 +127,24 @@ export function useMessenger(face: MessengerFace) {
 
   async function send(body: string) {
     const text = body.trim();
-    if (!text) return;
+    if (!text || !actor) return;
     let threadId = activeId;
     if (!threadId) {
       threadId = await ensureThread();
       if (!threadId) return;
     }
-
     setBusy(true);
     setError(null);
     try {
-      if (mode !== "live") {
-        sendDemoMessage(threadId, face, text);
-        refreshDemo();
-        return;
-      }
-      const supabase = createClient();
-      if (!supabase) throw new Error("Supabase unavailable");
-      const { error: rpcErr } = await supabase.rpc("send_portal_message", {
-        p_conversation_id: threadId,
-        p_body: text,
+      const res = await fetch("/api/messaging/messages", {
+        method: "POST",
+        headers: headers(face, actor),
+        body: JSON.stringify({ threadId, body: text }),
       });
-      if (rpcErr) throw rpcErr;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Send failed");
       await loadMessages(threadId);
-      await loadLive();
+      await loadThreads();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Send failed");
     } finally {
@@ -285,15 +152,8 @@ export function useMessenger(face: MessengerFace) {
     }
   }
 
-  async function markRead(threadId: string) {
-    if (mode !== "live") {
-      markDemoRead(threadId, face);
-      refreshDemo();
-      return;
-    }
-    const supabase = createClient();
-    if (!supabase) return;
-    await supabase.rpc("mark_conversation_read", { p_conversation_id: threadId });
+  async function markRead(_threadId: string) {
+    /* unread counters optional in file store */
   }
 
   return {
@@ -301,7 +161,7 @@ export function useMessenger(face: MessengerFace) {
     messages,
     activeId,
     setActiveId,
-    profile,
+    profile: null,
     mode,
     loading,
     error,
@@ -310,6 +170,6 @@ export function useMessenger(face: MessengerFace) {
     ensureThread,
     send,
     markRead,
-    refresh: loadLive,
+    refresh: loadThreads,
   };
 }
