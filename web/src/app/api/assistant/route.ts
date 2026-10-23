@@ -91,7 +91,7 @@ async function maybeOpenAiReply(
           {
             role: "system",
             content:
-              "You are Mobilare’s UK same-day courier assistant. Collect name, email, phone, service type, pickup/dropoff postcodes, timing, and special requirements. Be concise. When you have enough, confirm you will send the brief to CRM. Do not invent prices.",
+              "You are Mobilare’s UK same-day courier assistant. Collect name, email, phone, service type, pickup/dropoff postcodes, timing, and special requirements. Be concise. When you have enough, confirm you will send the brief to the Mobilare ops team. Never mention CRM admin, admin login, or internal admin pages. Do not invent prices.",
           },
           {
             role: "system",
@@ -170,9 +170,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       reply:
-        `Perfect — I’ve sent your requirements to Mobilare CRM.\n\n` +
+        `Perfect — I’ve sent your requirements to our ops team.\n\n` +
         `${summary}\n\n` +
-        `An ops agent will follow up on ${brief.email}. You can also book now at /book or open Support chat after sign-in.`,
+        `Someone will follow up on ${brief.email}. You can also book now at /book.`,
       brief,
       done: true,
       thread_id: thread.id,

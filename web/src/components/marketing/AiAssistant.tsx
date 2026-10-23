@@ -12,7 +12,7 @@ export function AiAssistant() {
     {
       role: "assistant",
       content:
-        "Hi — I’m Mobilare’s assistant. Tell me your specific delivery needs and I’ll pass everything to CRM.",
+        "Hi — I’m Mobilare’s assistant. Tell me your specific delivery needs and I’ll pass everything to our ops team.",
     },
   ]);
   const [brief, setBrief] = useState<Brief>({});
@@ -84,7 +84,7 @@ export function AiAssistant() {
             </p>
             <p className="font-display font-black text-lg">Specific requirements</p>
             <p className="text-xs text-white/60 mt-0.5">
-              Answers go straight to CRM Admin messages
+              We’ll pass your requirements to our ops team
             </p>
           </div>
 
@@ -110,15 +110,10 @@ export function AiAssistant() {
 
           {done ? (
             <div className="p-3 border-t border-gray-100 space-y-2 bg-white">
-              <p className="text-xs text-teal font-semibold">Sent to CRM inbox</p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/book" className="btn-primary !py-2 !px-4 text-sm">
-                  Book now
-                </Link>
-                <Link href="/admin/messages" className="btn-secondary !py-2 !px-4 text-sm">
-                  View CRM
-                </Link>
-              </div>
+              <p className="text-xs text-teal font-semibold">Sent to our ops team</p>
+              <Link href="/book" className="btn-primary !py-2 !px-4 text-sm inline-flex">
+                Book now
+              </Link>
               {threadId ? (
                 <p className="text-[10px] text-gray-400 font-mono">Ref {threadId.slice(0, 8)}</p>
               ) : null}
