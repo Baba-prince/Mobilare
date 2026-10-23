@@ -11,26 +11,30 @@ type DriverRow = {
   updated_at: string;
 };
 
-const DEMO_PINS: MapPin[] = [
-  { lat: 51.5155, lng: -0.0922, label: "D1", title: "Driver · City" },
-  { lat: 51.5074, lng: -0.1278, label: "J", title: "Job · EC1 → SW1" },
-  { lat: 51.52, lng: -0.15, label: "D2", title: "Driver · West" },
-];
-
 export function DispatchMap() {
-  const [pins, setPins] = useState<MapPin[]>(DEMO_PINS);
-  const [mode, setMode] = useState<"live" | "demo">("demo");
-  const [meta, setMeta] = useState("Demo fleet pins — connect DB for live drivers");
+  const [pins, setPins] = useState<MapPin[]>([]);
+  const [live, setLive] = useState(false);
+  const [meta, setMeta] = useState("Waiting for live driver locations…");
 
   useEffect(() => {
     const supabase = createClient();
-    if (!supabase) return;
+    if (!supabase) {
+      setMeta("Maps connected — sign in with CRM access to load live drivers");
+      return;
+    }
 
     let cancelled = false;
 
     async function load() {
       const { data: session } = await supabase!.auth.getSession();
-      if (!session.session) return;
+      if (!session.session) {
+        if (!cancelled) {
+          setLive(false);
+          setPins([]);
+          setMeta("Sign in as admin to see live driver locations");
+        }
+        return;
+      }
 
       const { data, error } = await supabase!
         .from("driver_locations")
@@ -40,9 +44,9 @@ export function DispatchMap() {
 
       if (cancelled) return;
       if (error || !data?.length) {
-        setMode("demo");
-        setMeta(error?.message || "No live drivers yet — showing demo pins");
-        setPins(DEMO_PINS);
+        setLive(false);
+        setPins([]);
+        setMeta(error?.message || "No drivers sharing location yet");
         return;
       }
 
@@ -54,7 +58,7 @@ export function DispatchMap() {
         title: `Driver · ${new Date(d.updated_at).toLocaleTimeString()}`,
       }));
       setPins(mapped);
-      setMode("live");
+      setLive(true);
       setMeta(`${mapped.length} live driver location${mapped.length === 1 ? "" : "s"}`);
     }
 
@@ -81,7 +85,7 @@ export function DispatchMap() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-gray-600 font-light">{meta}</p>
         <span className="text-[10px] font-bold uppercase tracking-wider text-teal">
-          {mode === "live" ? "Live Google map" : "Demo map"}
+          {live ? "Live Google map" : "Awaiting drivers"}
         </span>
       </div>
       <RouteMap pins={pins} heightClass="min-h-[420px]" />

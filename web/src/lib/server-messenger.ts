@@ -211,6 +211,67 @@ export async function sendMessage(opts: {
   return msg;
 }
 
+export async function createAiLeadThread(opts: {
+  name: string;
+  email: string;
+  phone?: string;
+  summary: string;
+  details: Record<string, string>;
+  transcript: { role: string; content: string }[];
+}) {
+  const store = await readStore();
+  const at = now();
+  const actorId = `ai:${opts.email.trim().toLowerCase()}`;
+  const detailLines = Object.entries(opts.details)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `• ${k}: ${v}`)
+    .join("\n");
+  const thread: StoreThread = {
+    id: randomUUID(),
+    subject: `AI lead · ${opts.name.trim() || opts.email}`,
+    context: opts.summary.slice(0, 160),
+    kind: "contact",
+    status: "open",
+    customerActorId: actorId,
+    driverActorId: null,
+    contactEmail: opts.email.trim().toLowerCase(),
+    contactName: opts.name.trim(),
+    lastMessageAt: at,
+    lastMessagePreview: opts.summary.slice(0, 160),
+    createdAt: at,
+  };
+  store.threads.unshift(thread);
+  store.messages.push({
+    id: randomUUID(),
+    threadId: thread.id,
+    from: "system",
+    body: `AI assistant lead from ${opts.name} <${opts.email}>${opts.phone ? ` · ${opts.phone}` : ""}`,
+    at,
+  });
+  store.messages.push({
+    id: randomUUID(),
+    threadId: thread.id,
+    from: "customer",
+    body: `Requirement brief\n\n${opts.summary}\n\n${detailLines}`,
+    at: new Date(Date.now() + 1).toISOString(),
+    senderName: opts.name.trim(),
+  });
+  if (opts.transcript.length) {
+    const transcriptText = opts.transcript
+      .map((m) => `${m.role === "assistant" ? "Assistant" : "User"}: ${m.content}`)
+      .join("\n");
+    store.messages.push({
+      id: randomUUID(),
+      threadId: thread.id,
+      from: "system",
+      body: `Chat transcript\n\n${transcriptText.slice(0, 6000)}`,
+      at: new Date(Date.now() + 2).toISOString(),
+    });
+  }
+  await writeStore(store);
+  return thread;
+}
+
 export async function createContactThread(opts: {
   name: string;
   email: string;

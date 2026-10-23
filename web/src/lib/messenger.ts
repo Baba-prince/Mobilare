@@ -81,6 +81,3 @@ export function mapMessage(row: Record<string, unknown>): MessengerMessage {
     senderProfileId: row.sender_profile_id ? String(row.sender_profile_id) : null,
   };
 }
-
-/** Demo store key — used only when Supabase session is unavailable. */
-export const DEMO_MESSENGER_KEY = "mobilare_messenger_v1";

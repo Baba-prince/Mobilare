@@ -1,3 +1,4 @@
+import { AiAssistant } from "./AiAssistant";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 
@@ -7,6 +8,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />
+      <AiAssistant />
     </div>
   );
 }

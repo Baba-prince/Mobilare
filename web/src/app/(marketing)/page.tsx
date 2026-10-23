@@ -35,72 +35,42 @@ export default function HomePage() {
             <div className="md:mt-0 mt-8">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-teal/20 to-transparent rounded-3xl blur-3xl" />
-                <div className="relative bg-gradient-to-br from-gray-800/40 to-transparent border border-teal/30 rounded-3xl p-6 md:p-8 lg:p-10 backdrop-blur">
-                  <div className="space-y-4 pb-6 border-b border-gray-700/50">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-gray-400 text-xs uppercase tracking-wide">Live Job</p>
-                        <p className="text-white font-black text-lg">
-                          #3847: Medical supplies → City Hospital
-                        </p>
-                      </div>
-                      <div className="animate-pulse">
-                        <div className="w-2 h-2 bg-red-500 rounded-full" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4 py-6 border-b border-gray-700/50">
-                    <div className="flex items-center justify-between">
-                      <p className="text-gray-300 font-medium">Driver en route</p>
-                      <p className="text-teal font-black text-lg">12 min</p>
-                    </div>
-                    <div className="w-full bg-gray-700/30 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-teal to-teal-bright h-2 rounded-full"
-                        style={{ width: "65%" }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-400">
-                      <span>Picked up</span>
-                      <span>In transit</span>
-                      <span>Delivery</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4 py-6">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">
-                      Proof of Delivery
+                <div className="relative bg-gradient-to-br from-gray-800/40 to-transparent border border-teal/30 rounded-3xl p-6 md:p-8 lg:p-10 backdrop-blur space-y-6">
+                  <div>
+                    <p className="text-gray-400 text-xs uppercase tracking-wide">What you get</p>
+                    <p className="text-white font-black text-lg mt-1">
+                      Quote → pay → track → proof
                     </p>
-                    <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
-                      <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg aspect-video flex items-center justify-center border border-gray-600/30">
-                        <div className="text-center space-y-2">
-                          <div className="text-gray-500 text-sm">Photo captured</div>
-                          <div className="text-gray-600 text-xs">On delivery completion</div>
-                        </div>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Time</span>
-                          <span className="text-white font-medium">14:23 GMT</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Location</span>
-                          <span className="text-white font-medium">City Hospital, EC1A 1BB</span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                  <div className="pt-4 border-t border-gray-700/50 grid grid-cols-3 gap-4 text-xs">
+                  <ul className="space-y-3 text-sm text-gray-300 font-light">
                     {[
-                      ["100%", "Tracked"],
-                      ["Real-time", "Updates"],
-                      ["Verified", "Proof"],
+                      "Instant UK postcode quotes",
+                      "Pay in full via Stripe Checkout",
+                      "Live GPS tracking for every job",
+                      "Photo proof of delivery",
+                      "CRM inbox for customers & drivers",
+                    ].map((item) => (
+                      <li key={item} className="flex gap-2 items-start">
+                        <span className="text-teal font-black mt-0.5">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pt-2 grid grid-cols-3 gap-4 text-xs border-t border-gray-700/50">
+                    {[
+                      ["Same-day", "Courier"],
+                      ["Medical", "Legal"],
+                      ["Removals", "Warehouse"],
                     ].map(([a, b]) => (
-                      <div key={b} className="text-center space-y-1">
+                      <div key={a} className="text-center space-y-1">
                         <p className="text-teal font-black">{a}</p>
                         <p className="text-gray-400">{b}</p>
                       </div>
                     ))}
                   </div>
+                  <Link href="/book" className="btn-primary inline-flex w-full justify-center">
+                    Get a quote
+                  </Link>
                 </div>
               </div>
             </div>

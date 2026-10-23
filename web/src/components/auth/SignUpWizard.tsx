@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { portalForRole, saveDemoUser, UserRole } from "@/lib/auth-demo";
+import { portalForRole, UserRole } from "@/lib/auth-session";
 import { createClient } from "@/lib/supabase/client";
 
 type Step = "role" | "details" | "done";
@@ -38,42 +38,39 @@ export function SignUpWizard() {
     setError(null);
 
     const supabase = createClient();
-    if (supabase) {
-      const { data, error: signError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role,
-            phone,
-            company,
-            vehicle,
-          },
-        },
-      });
-      if (signError) {
-        setError(signError.message);
-        setLoading(false);
-        return;
-      }
-      if (data.user) {
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          email,
+    if (!supabase) {
+      setError("Authentication is not configured. Contact support.");
+      setLoading(false);
+      return;
+    }
+
+    const { data, error: signError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
           full_name: fullName,
           role,
           phone,
           company,
           vehicle,
-        });
-      }
-    } else {
-      saveDemoUser({
-        id: crypto.randomUUID(),
+        },
+      },
+    });
+    if (signError) {
+      setError(signError.message);
+      setLoading(false);
+      return;
+    }
+    if (data.user) {
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
         email,
-        fullName,
+        full_name: fullName,
         role,
+        phone,
+        company,
+        vehicle,
       });
     }
 

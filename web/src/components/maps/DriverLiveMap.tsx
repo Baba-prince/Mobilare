@@ -12,16 +12,12 @@ export function DriverLiveMap() {
     enabled: sharing,
   });
   const [publishMsg, setPublishMsg] = useState<string | null>(null);
-  const [jobPins, setJobPins] = useState<
-    { lat: number; lng: number; label: string; title: string }[]
-  >([]);
 
-  // Publish heartbeat to Supabase when available
   useEffect(() => {
     if (!sharing || !point || usingFallback) return;
     const supabase = createClient();
     if (!supabase) {
-      setPublishMsg("Demo GPS (sign in + DB to publish live location)");
+      setPublishMsg("Sign in required to publish live location");
       return;
     }
 
@@ -47,32 +43,13 @@ export function DriverLiveMap() {
     };
   }, [point, sharing, usingFallback]);
 
-  // Demo job pins around driver (or London) for map context
-  useEffect(() => {
-    if (!point) return;
-    setJobPins([
-      {
-        lat: point.lat + 0.02,
-        lng: point.lng + 0.015,
-        label: "J1",
-        title: "Queued job nearby",
-      },
-      {
-        lat: point.lat - 0.015,
-        lng: point.lng + 0.01,
-        label: "J2",
-        title: "Available job",
-      },
-    ]);
-  }, [point]);
-
   return (
     <div className="space-y-4">
       <div className="admin-card flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-black text-gray-900">Share live location</p>
           <p className="text-sm text-gray-600 font-light mt-1">
-            GPS streams to CRM dispatch and customer track maps (jobs.last_lat/lng).
+            GPS streams to CRM dispatch and customer track maps.
           </p>
         </div>
         <button
@@ -92,11 +69,7 @@ export function DriverLiveMap() {
       ) : null}
       {publishMsg ? <p className="text-xs text-gray-500">{publishMsg}</p> : null}
 
-      <RouteMap
-        driver={point}
-        pins={jobPins}
-        heightClass="min-h-[360px]"
-      />
+      <RouteMap driver={point} pins={[]} heightClass="min-h-[360px]" />
 
       {point ? (
         <p className="text-xs text-gray-500 font-mono">

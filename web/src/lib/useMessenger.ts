@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MessengerFace, MessengerMessage, MessengerThread } from "@/lib/messenger";
 import { getPortalActor } from "@/lib/portal-actor";
 
-type Mode = "portal" | "demo";
-
 function headers(face: MessengerFace, actor: string) {
   return {
     "Content-Type": "application/json",
@@ -20,7 +18,6 @@ export function useMessenger(face: MessengerFace) {
     {},
   );
   const [activeId, setActiveId] = useState<string | undefined>();
-  const [mode, setMode] = useState<Mode>("portal");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,11 +40,9 @@ export function useMessenger(face: MessengerFace) {
       if (!res.ok) throw new Error(data.error || "Could not load threads");
       const list = (data.threads || []) as MessengerThread[];
       setThreads(list);
-      setMode("portal");
       if (!activeId && list[0]) setActiveId(list[0].id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Load failed");
-      setMode("demo");
     } finally {
       setLoading(false);
     }
@@ -82,13 +77,13 @@ export function useMessenger(face: MessengerFace) {
 
   // Near-realtime poll (shared server store across portals)
   useEffect(() => {
-    if (!actor || mode !== "portal") return;
+    if (!actor) return;
     const id = window.setInterval(() => {
       void loadThreads();
       if (activeId) void loadMessages(activeId);
     }, 3000);
     return () => window.clearInterval(id);
-  }, [actor, mode, activeId, loadThreads, loadMessages]);
+  }, [actor, activeId, loadThreads, loadMessages]);
 
   const messages = useMemo(
     () => (activeId ? messagesByThread[activeId] || [] : []),
@@ -162,7 +157,7 @@ export function useMessenger(face: MessengerFace) {
     activeId,
     setActiveId,
     profile: null,
-    mode,
+    mode: "portal" as const,
     loading,
     error,
     busy,

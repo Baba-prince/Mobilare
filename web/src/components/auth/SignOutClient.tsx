@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { clearDemoUser } from "@/lib/auth-demo";
 import { createClient } from "@/lib/supabase/client";
 
 export function SignOutClient() {
@@ -12,7 +11,6 @@ export function SignOutClient() {
     async function run() {
       const supabase = createClient();
       if (supabase) await supabase.auth.signOut();
-      clearDemoUser();
       setDone(true);
     }
     run();

@@ -450,12 +450,7 @@
       if (!document.getElementById("mb-name").value.trim()) throw new Error("Enter your name");
       if (!document.getElementById("mb-email").value.trim()) throw new Error("Enter your email");
 
-      // Checkout still requires Supabase edge + Stripe; fail clearly until wired
-      var checkoutBase = (window.__MOBILARE_FUNCTIONS_BASE || "");
-      if (!checkoutBase) {
-        throw new Error("Quote ready — payment backend reconnecting. Contact bookings@mobilare.co.uk or try again shortly.");
-      }
-      var res = await fetch(checkoutBase + "/checkout", {
+      var res = await fetch(API_BASE + "/checkout", {
         method: "POST",
         headers: headers(),
         body: JSON.stringify({

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { loadDemoUser, type UserRole } from "@/lib/auth-demo";
+import type { UserRole } from "@/lib/auth-session";
 import { createClient } from "@/lib/supabase/client";
 
 type Access = {
@@ -64,13 +64,8 @@ export default function PortalPage() {
           return;
         }
       }
-      const demo = loadDemoUser();
       if (alive) {
-        setAccess(
-          demo
-            ? { email: demo.email, name: demo.fullName, role: demo.role }
-            : null,
-        );
+        setAccess(null);
         setBusy(false);
       }
     })();

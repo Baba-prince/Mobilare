@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { assertService, normalizePostcode, priceQuote, type PropertySize, type VehicleType } from "@/lib/pricing";
+import { saveQuote } from "@/lib/quote-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,46 +51,7 @@ export async function POST(req: NextRequest) {
     });
 
     const quote_id = randomUUID();
-
-    // Best-effort persist when service role is configured
-    const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (url && service) {
-      try {
-        await fetch(`${url.replace(/\/$/, "")}/rest/v1/quotes`, {
-          method: "POST",
-          headers: {
-            apikey: service,
-            Authorization: `Bearer ${service}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            id: quote_id,
-            service_type,
-            pickup_postcode: normalizePostcode(pickup.postcode),
-            dropoff_postcode: normalizePostcode(dropoff.postcode),
-            package_notes: body.package_notes
-              ? String(body.package_notes).slice(0, 500)
-              : null,
-            amount_vat_inclusive_pence: priced.amount_pence,
-            distance_band: priced.distance_band,
-            eta_minutes: priced.eta_minutes,
-            coverage_ok: true,
-            expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-            meta: {
-              estimated_miles: priced.estimated_miles,
-              crow_miles: priced.crow_miles,
-              source: "next_api_booking_quote",
-            },
-          }),
-        });
-      } catch {
-        /* quote still returned to UI */
-      }
-    }
-
-    return NextResponse.json({
+    const payload = {
       quote_id,
       service_type,
       amount_vat_inclusive_pence: priced.amount_pence,
@@ -104,7 +66,12 @@ export async function POST(req: NextRequest) {
       pickup_formatted: pickup.postcode,
       dropoff_formatted: dropoff.postcode,
       coverage_ok: true,
-    });
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      created_at: new Date().toISOString(),
+    };
+    await saveQuote(payload);
+
+    return NextResponse.json(payload);
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Quote failed" },
