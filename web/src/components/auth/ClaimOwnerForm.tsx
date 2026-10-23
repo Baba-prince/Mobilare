@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export function ClaimOwnerForm() {
   const router = useRouter();
@@ -101,21 +102,19 @@ export function ClaimOwnerForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          className="input-field"
-          type="password"
+        <PasswordInput
           minLength={8}
           placeholder="Password (min 8 chars)"
           required
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <input
-          className="input-field"
-          type="password"
+        <PasswordInput
           minLength={8}
           placeholder="Confirm password"
           required
+          autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />

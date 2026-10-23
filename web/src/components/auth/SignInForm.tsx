@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 export function SignInForm() {
   const router = useRouter();
@@ -63,9 +64,7 @@ export function SignInForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          className="input-field"
-          type="password"
+        <PasswordInput
           required
           minLength={8}
           placeholder="Password"

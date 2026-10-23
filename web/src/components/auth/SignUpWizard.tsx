@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { portalForRole, UserRole } from "@/lib/auth-session";
 import { createClient } from "@/lib/supabase/client";
 
@@ -146,12 +147,11 @@ export function SignUpWizard() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input
-            className="input-field"
-            type="password"
+          <PasswordInput
             placeholder="Password (min 8 chars)"
             minLength={8}
             required
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

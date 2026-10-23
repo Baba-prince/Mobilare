@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 type ListedUser = {
   id: string;
@@ -89,12 +90,11 @@ export default function AdminUsersPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          className="input-field"
-          type="password"
+        <PasswordInput
           minLength={8}
           placeholder="Temporary password (min 8)"
           required
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
