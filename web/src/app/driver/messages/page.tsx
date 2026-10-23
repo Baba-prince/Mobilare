@@ -9,8 +9,7 @@ export default function DriverMessagesPage() {
       <div>
         <p className="eyebrow">Dispatch</p>
         <p className="text-sm text-gray-600 font-light mt-1 max-w-2xl">
-          Talk to CRM / dispatch about jobs, corridors, and POD issues. Live two-way chat — not a
-          static form.
+          Talk to CRM / dispatch about jobs, corridors, and POD issues.
         </p>
       </div>
       <MessengerApp

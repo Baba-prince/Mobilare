@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Bridge from Command Centre → live Tri-inbox (Supabase-backed). */
+/** Bridge → live Tri-inbox. */
 export default function AdminCrmInboxBridge() {
   redirect("/admin/messages");
 }

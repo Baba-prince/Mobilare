@@ -33,7 +33,6 @@ export function MessengerApp({
     messages,
     activeId,
     setActiveId,
-    mode,
     loading,
     error,
     busy,
@@ -82,7 +81,7 @@ export function MessengerApp({
           <p className="text-xs text-gray-500 mt-0.5">
             As {FACE_LABEL[face]}
             {unreadTotal > 0 ? ` · ${unreadTotal} unread` : ""}
-            {mode === "portal" ? " · live portal" : ` · ${mode}`}
+            {" · live"}
           </p>
         </div>
         {(face === "customer" || face === "driver") && (

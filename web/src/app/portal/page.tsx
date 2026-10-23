@@ -37,7 +37,7 @@ const doors: {
     role: "admin",
     href: "/admin",
     title: "CRM Admin",
-    blurb: "Ops board, inbox for customers & drivers, Command Centre.",
+    blurb: "Ops board, inbox for customers & drivers, dispatch map.",
     badge: "CRM",
   },
 ];
@@ -144,7 +144,7 @@ export default function PortalPage() {
                       href="/admin-crm"
                       className="mt-2 text-center text-xs text-teal-bright hover:underline"
                     >
-                      Open Command Centre
+                      Open CRM dashboard
                     </Link>
                   ) : null}
                 </div>

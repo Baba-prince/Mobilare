@@ -22,23 +22,11 @@ export default function DriverHomePage() {
           </Link>
         </div>
       </div>
-      <div className="grid md:grid-cols-3 gap-4">
-        {[
-          ["Jobs board", "Open Jobs"],
-          ["Dispatch chat", "Live"],
-          ["Portal", "Switch entrance"],
-        ].map(([l, v]) => (
-          <div key={l} className="admin-card">
-            <p className="text-sm text-gray-500">{l}</p>
-            <p className="text-lg font-black text-gray-900 mt-1">{v}</p>
-          </div>
-        ))}
-      </div>
       <div className="admin-card">
-        <p className="font-black text-gray-900 mb-2">Talk to dispatch</p>
+        <p className="font-black text-gray-900 mb-2">Getting started</p>
         <p className="text-sm text-gray-600 font-light mb-4">
-          Corridor coverage, POD issues, and job questions go straight to the CRM Tri-inbox —
-          same pattern as RoadAngel driver ↔ CRM.
+          Share your live location, open the jobs board when dispatch releases work, and message CRM
+          for corridor or POD questions.
         </p>
         <div className="flex flex-wrap gap-2">
           <Link href="/driver/messages" className="btn-primary">
@@ -46,6 +34,9 @@ export default function DriverHomePage() {
           </Link>
           <Link href="/driver/jobs" className="btn-secondary">
             View jobs
+          </Link>
+          <Link href="/driver/earnings" className="btn-secondary">
+            Earnings
           </Link>
         </div>
       </div>

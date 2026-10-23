@@ -1,22 +1,21 @@
 import Link from "next/link";
 
-/** Admin CRM entry — Command Centre 2027 + live inbox bridge */
+/** Admin CRM entry — live ops board + inbox. */
 export default function AdminCrmPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full rounded-3xl border border-white/10 bg-white/5 p-8 space-y-5">
-        <p className="text-[10px] font-bold tracking-[0.2em] text-[#00C896]">COMMAND 2027</p>
+        <p className="text-[10px] font-bold tracking-[0.2em] text-[#00C896]">CRM</p>
         <h1 className="font-display text-3xl font-black">Admin CRM</h1>
         <p className="text-sm text-white/70 font-light">
-          Open the Command Centre board, or the live Tri-inbox for customer support and driver
-          desk messages.
+          Live operations dashboard and Tri-inbox for customer support and driver desk messages.
         </p>
         <div className="grid gap-2">
           <Link
-            href="/admin-crm/login.html"
+            href="/admin"
             className="rounded-full bg-[#00C896] text-[#0A1931] font-bold text-center py-3"
           >
-            Command Centre login
+            Operations dashboard
           </Link>
           <Link
             href="/admin/messages"

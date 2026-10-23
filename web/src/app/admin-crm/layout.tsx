@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Mobilare Admin CRM",
-  description: "Mobilare Command Centre 2027 — admin only",
+  description: "Mobilare Admin CRM — ops only",
   robots: { index: false, follow: false },
 };
 
