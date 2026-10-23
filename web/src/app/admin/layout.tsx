@@ -1,5 +1,10 @@
 import { AdminShell } from "@/components/admin/AdminShell";
+import { RequireAdmin } from "@/components/admin/RequireAdmin";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <RequireAdmin>
+      <AdminShell>{children}</AdminShell>
+    </RequireAdmin>
+  );
 }

@@ -1,3 +1,4 @@
+import { RequireRole } from "@/components/auth/RequireRole";
 import { PortalShell } from "@/components/portal/PortalShell";
 
 const nav = [
@@ -10,5 +11,11 @@ const nav = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <PortalShell title="Customer portal" nav={nav}>{children}</PortalShell>;
+  return (
+    <RequireRole roles={["customer", "owner", "admin"]} nextPath="/account">
+      <PortalShell title="Customer portal" nav={nav}>
+        {children}
+      </PortalShell>
+    </RequireRole>
+  );
 }

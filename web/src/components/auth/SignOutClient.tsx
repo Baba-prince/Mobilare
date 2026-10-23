@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export function SignOutClient() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
     async function run() {
-      const supabase = createClient();
-      if (supabase) await supabase.auth.signOut();
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {
+        /* ignore */
+      }
       setDone(true);
     }
     run();

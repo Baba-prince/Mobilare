@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { getSessionUser } from "@/lib/server-auth";
 
-const nav = [
+const baseNav = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/messages", label: "Inbox" },
   { href: "/admin/map", label: "Dispatch map" },
-  { href: "/admin-crm", label: "Admin CRM" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/drivers", label: "Drivers" },
@@ -14,13 +14,30 @@ const nav = [
   { href: "/portal", label: "Portal" },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export async function AdminShell({ children }: { children: React.ReactNode }) {
+  const user = await getSessionUser();
+  const nav =
+    user?.role === "owner"
+      ? [
+          ...baseNav.slice(0, 4),
+          { href: "/admin/users", label: "Users" },
+          ...baseNav.slice(4),
+        ]
+      : baseNav;
+
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
       <div className="min-h-screen grid lg:grid-cols-[260px_1fr]">
         <aside className="bg-ink text-white px-5 py-6 flex flex-col">
           <BrandLogo href="/admin" size="md" className="text-white mb-1" />
-          <p className="text-xs text-gray-400 mb-8 uppercase tracking-wider">Admin</p>
+          <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Admin</p>
+          {user ? (
+            <p className="text-[11px] text-teal-bright mb-8 truncate">
+              {user.name} · {user.role}
+            </p>
+          ) : (
+            <div className="mb-8" />
+          )}
           <nav className="space-y-1 flex-1">
             {nav.map((item) => (
               <Link

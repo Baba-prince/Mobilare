@@ -1,41 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { portalForRole, UserRole } from "@/lib/auth-session";
-import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
 
 export function SignInForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const next = params.get("next") || "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [ownerClaimed, setOwnerClaimed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((d) => setOwnerClaimed(Boolean(d.ownerClaimed)))
+      .catch(() => setOwnerClaimed(true));
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
-    const supabase = createClient();
-    if (!supabase) {
-      setError("Authentication is not configured. Contact support.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sign in failed");
+      const dest =
+        next && next.startsWith("/")
+          ? next
+          : data.redirect || "/portal";
+      router.push(dest);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign in failed");
       setLoading(false);
-      return;
     }
-
-    const { data, error: signError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (signError) {
-      setError(signError.message);
-      setLoading(false);
-      return;
-    }
-    const role = (data.user?.user_metadata?.role as UserRole) || "customer";
-    router.push(portalForRole(role));
   }
 
   return (
@@ -44,7 +51,7 @@ export function SignInForm() {
         <p className="eyebrow text-teal-bright mb-2">Welcome back</p>
         <h1 className="font-display text-3xl font-black">Sign in</h1>
         <p className="text-gray-300 font-light mt-2 text-sm">
-          Customers, drivers, and admins use the same sign-in. We route you to the right portal.
+          CRM, driver, and customer portals require a login created by the owner.
         </p>
       </div>
       <form onSubmit={onSubmit} className="space-y-3">
@@ -70,12 +77,18 @@ export function SignInForm() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      <p className="text-sm text-gray-400">
-        New here?{" "}
-        <Link href="/auth/sign-up" className="text-teal-bright font-semibold">
-          Sign up
-        </Link>
-      </p>
+      {ownerClaimed === false ? (
+        <p className="text-sm text-gray-400">
+          First time setup?{" "}
+          <Link href="/auth/claim-owner" className="text-teal-bright font-semibold">
+            Claim owner account
+          </Link>
+        </p>
+      ) : (
+        <p className="text-sm text-gray-400">
+          Need access? Ask the owner to create your login from Admin → Users.
+        </p>
+      )}
     </div>
   );
 }

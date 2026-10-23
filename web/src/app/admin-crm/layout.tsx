@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RequireAdmin } from "@/components/admin/RequireAdmin";
 
 export const metadata: Metadata = {
   title: "Mobilare Admin CRM",
@@ -12,8 +13,8 @@ export default function AdminCrmLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#0A1931] text-white">
-      {children}
-    </div>
+    <RequireAdmin>
+      <div className="min-h-screen bg-[#0A1931] text-white">{children}</div>
+    </RequireAdmin>
   );
 }

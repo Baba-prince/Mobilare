@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import type { UserRole } from "@/lib/auth-session";
-import { createClient } from "@/lib/supabase/client";
 
 type Access = {
   email: string;
@@ -45,28 +44,30 @@ const doors: {
 export default function PortalPage() {
   const [access, setAccess] = useState<Access | null>(null);
   const [busy, setBusy] = useState(true);
+  const [ownerClaimed, setOwnerClaimed] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const supabase = createClient();
-      if (supabase) {
-        const { data } = await supabase.auth.getSession();
-        const user = data.session?.user;
-        if (user && alive) {
-          const role = ((user.user_metadata?.role as UserRole) || "customer") as UserRole;
-          setAccess({
-            email: user.email || "",
-            name: String(user.user_metadata?.full_name || user.email || "Member"),
-            role,
-          });
-          setBusy(false);
-          return;
+      try {
+        const [meRes, stRes] = await Promise.all([
+          fetch("/api/auth/me", { cache: "no-store" }),
+          fetch("/api/auth/status", { cache: "no-store" }),
+        ]);
+        const st = await stRes.json();
+        if (alive) setOwnerClaimed(Boolean(st.ownerClaimed));
+        if (meRes.ok) {
+          const data = await meRes.json();
+          const u = data.user;
+          if (u && alive) {
+            const role = (u.role === "owner" ? "admin" : u.role) as UserRole;
+            setAccess({ email: u.email, name: u.name, role });
+          }
         }
-      }
-      if (alive) {
-        setAccess(null);
-        setBusy(false);
+      } catch {
+        /* ignore */
+      } finally {
+        if (alive) setBusy(false);
       }
     })();
     return () => {
@@ -87,19 +88,23 @@ export default function PortalPage() {
                 Sign in
               </Link>
             )}
+            {!ownerClaimed ? (
+              <Link href="/auth/claim-owner" className="text-teal-bright hover:underline">
+                Claim owner
+              </Link>
+            ) : null}
             <Link href="/auth/sign-out" className="text-white/70 hover:text-white">
               Sign out
             </Link>
           </div>
         </div>
 
-        <p className="eyebrow text-teal-bright mb-3">Portal · three entrances</p>
+        <p className="eyebrow text-teal-bright mb-3">Portal · locked entrances</p>
         <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight max-w-2xl">
-          Open the system.
+          Sign in to open the system.
         </h1>
         <p className="mt-4 text-white/70 font-light max-w-xl text-lg">
-          Customers, drivers, and CRM share one login. Messages between users, drivers, and
-          admin land in the same live inbox.
+          CRM Admin is locked. Owner claims the account once, then creates logins for everyone else.
         </p>
 
         {busy ? (
@@ -107,8 +112,12 @@ export default function PortalPage() {
         ) : (
           <div className="mt-12 grid md:grid-cols-3 gap-4">
             {doors.map((door) => {
-              const unlocked = !access || access.role === door.role || access.role === "admin";
-              const primary = access?.role === door.role;
+              const unlocked =
+                access &&
+                (access.role === door.role ||
+                  access.role === "admin" ||
+                  access.role === "owner");
+              const primary = access?.role === door.role || (door.role === "admin" && access?.role === "owner");
               return (
                 <div
                   key={door.role}
@@ -135,44 +144,18 @@ export default function PortalPage() {
                       Enter →
                     </Link>
                   ) : (
-                    <p className="mt-6 text-xs text-white/40">
-                      Signed in as {access?.role}. Use the matching entrance or an admin account.
-                    </p>
-                  )}
-                  {door.role === "admin" && unlocked ? (
                     <Link
-                      href="/admin-crm"
-                      className="mt-2 text-center text-xs text-teal-bright hover:underline"
+                      href={`/auth/sign-in?next=${encodeURIComponent(door.href)}`}
+                      className="mt-6 inline-flex justify-center rounded-full px-5 py-3 text-sm font-bold bg-white/10 text-white hover:bg-white/20"
                     >
-                      Open CRM dashboard
+                      Sign in required →
                     </Link>
-                  ) : null}
+                  )}
                 </div>
               );
             })}
           </div>
         )}
-
-        <div className="mt-10 flex flex-wrap gap-4 text-sm">
-          <Link href="/account/messages" className="text-teal-bright hover:underline">
-            Customer support chat
-          </Link>
-          <Link href="/account/bookings" className="text-teal-bright hover:underline">
-            Track map
-          </Link>
-          <Link href="/driver/messages" className="text-teal-bright hover:underline">
-            Driver ↔ CRM
-          </Link>
-          <Link href="/driver/location" className="text-teal-bright hover:underline">
-            Driver live GPS
-          </Link>
-          <Link href="/admin/messages" className="text-teal-bright hover:underline">
-            CRM inbox
-          </Link>
-          <Link href="/admin/map" className="text-teal-bright hover:underline">
-            Dispatch map
-          </Link>
-        </div>
       </div>
     </div>
   );
