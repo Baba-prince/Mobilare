@@ -84,7 +84,7 @@ export function AiAssistant() {
             </p>
             <p className="font-display font-black text-lg">Specific requirements</p>
             <p className="text-xs text-white/60 mt-0.5">
-              We’ll pass your requirements to our ops team
+              We’ll pass your requirements to Customer Relation
             </p>
           </div>
 
@@ -110,7 +110,7 @@ export function AiAssistant() {
 
           {done ? (
             <div className="p-3 border-t border-gray-100 space-y-2 bg-white">
-              <p className="text-xs text-teal font-semibold">Sent to our ops team</p>
+              <p className="text-xs text-teal font-semibold">Sent to Customer Relation</p>
               <Link href="/book" className="btn-primary !py-2 !px-4 text-sm inline-flex">
                 Book now
               </Link>
