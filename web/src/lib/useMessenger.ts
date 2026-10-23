@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MessengerFace, MessengerMessage, MessengerThread } from "@/lib/messenger";
 import { getPortalActor } from "@/lib/portal-actor";
 
@@ -10,6 +10,32 @@ function headers(face: MessengerFace, actor: string) {
     "x-mobilare-face": face,
     "x-mobilare-actor": actor,
   };
+}
+
+function sameThreads(a: MessengerThread[], b: MessengerThread[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.lastMessageAt !== y.lastMessageAt ||
+      x.lastMessagePreview !== y.lastMessagePreview ||
+      x.unread !== y.unread ||
+      x.subject !== y.subject
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function sameMessages(a: MessengerMessage[], b: MessengerMessage[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].id !== b[i].id || a[i].body !== b[i].body) return false;
+  }
+  return true;
 }
 
 export function useMessenger(face: MessengerFace) {
@@ -23,30 +49,41 @@ export function useMessenger(face: MessengerFace) {
   const [busy, setBusy] = useState(false);
   const [actor, setActor] = useState<string>("");
 
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
     setActor(getPortalActor(face));
   }, [face]);
 
-  const loadThreads = useCallback(async () => {
-    if (!actor) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/messaging/threads", {
-        headers: headers(face, actor),
-        cache: "no-store",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not load threads");
-      const list = (data.threads || []) as MessengerThread[];
-      setThreads(list);
-      if (!activeId && list[0]) setActiveId(list[0].id);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Load failed");
-    } finally {
-      setLoading(false);
-    }
-  }, [actor, face, activeId]);
+  const loadThreads = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!actor) return;
+      const silent = opts?.silent ?? false;
+      if (!silent && !initialLoadDone.current) setLoading(true);
+      if (!silent) setError(null);
+      try {
+        const res = await fetch("/api/messaging/threads", {
+          headers: headers(face, actor),
+          cache: "no-store",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not load threads");
+        const list = (data.threads || []) as MessengerThread[];
+        setThreads((prev) => (sameThreads(prev, list) ? prev : list));
+        if (!activeIdRef.current && list[0]) setActiveId(list[0].id);
+      } catch (e) {
+        if (!silent) setError(e instanceof Error ? e.message : "Load failed");
+      } finally {
+        if (!silent) {
+          setLoading(false);
+          initialLoadDone.current = true;
+        }
+      }
+    },
+    [actor, face],
+  );
 
   const loadMessages = useCallback(async (conversationId: string) => {
     try {
@@ -56,10 +93,12 @@ export function useMessenger(face: MessengerFace) {
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load messages");
-      setMessagesByThread((prev) => ({
-        ...prev,
-        [conversationId]: (data.messages || []) as MessengerMessage[],
-      }));
+      const next = (data.messages || []) as MessengerMessage[];
+      setMessagesByThread((prev) => {
+        const cur = prev[conversationId] || [];
+        if (sameMessages(cur, next)) return prev;
+        return { ...prev, [conversationId]: next };
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load messages");
     }
@@ -67,7 +106,8 @@ export function useMessenger(face: MessengerFace) {
 
   useEffect(() => {
     if (!actor) return;
-    void loadThreads();
+    initialLoadDone.current = false;
+    void loadThreads({ silent: false });
   }, [actor, loadThreads]);
 
   useEffect(() => {
@@ -75,15 +115,16 @@ export function useMessenger(face: MessengerFace) {
     void loadMessages(activeId);
   }, [activeId, loadMessages]);
 
-  // Near-realtime poll (shared server store across portals)
+  // Silent poll — do not toggle loading (avoids blink)
   useEffect(() => {
     if (!actor) return;
     const id = window.setInterval(() => {
-      void loadThreads();
-      if (activeId) void loadMessages(activeId);
-    }, 3000);
+      void loadThreads({ silent: true });
+      const tid = activeIdRef.current;
+      if (tid) void loadMessages(tid);
+    }, 4000);
     return () => window.clearInterval(id);
-  }, [actor, activeId, loadThreads, loadMessages]);
+  }, [actor, loadThreads, loadMessages]);
 
   const messages = useMemo(
     () => (activeId ? messagesByThread[activeId] || [] : []),
@@ -108,7 +149,7 @@ export function useMessenger(face: MessengerFace) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not open thread");
       const id = String(data.thread.id);
-      await loadThreads();
+      await loadThreads({ silent: true });
       setActiveId(id);
       await loadMessages(id);
       return id;
@@ -139,7 +180,7 @@ export function useMessenger(face: MessengerFace) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Send failed");
       await loadMessages(threadId);
-      await loadThreads();
+      await loadThreads({ silent: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Send failed");
     } finally {
@@ -165,6 +206,6 @@ export function useMessenger(face: MessengerFace) {
     ensureThread,
     send,
     markRead,
-    refresh: loadThreads,
+    refresh: () => loadThreads({ silent: false }),
   };
 }

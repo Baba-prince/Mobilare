@@ -56,13 +56,15 @@ export function MessengerApp({
     if (initialThreadId) setActiveId(initialThreadId);
   }, [initialThreadId, setActiveId]);
 
+  // Select first thread once — avoid re-running on every poll update
   useEffect(() => {
     if (!activeId && threads[0]) setActiveId(threads[0].id);
-  }, [threads, activeId, setActiveId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when empty → has threads
+  }, [Boolean(activeId), threads[0]?.id]);
 
   useEffect(() => {
     if (activeId) void markRead(activeId);
-  }, [activeId, markRead, messages.length]);
+  }, [activeId, markRead]);
 
   const active = threads.find((t) => t.id === activeId);
 
@@ -102,7 +104,7 @@ export function MessengerApp({
 
       <div className={`flex-1 grid ${split ? "md:grid-cols-[280px_1fr]" : "grid-cols-1"} min-h-0`}>
         <aside className="border-r border-gray-100 bg-[#FAFBFC] max-h-[70vh] overflow-y-auto">
-          {loading ? (
+          {loading && threads.length === 0 ? (
             <p className="p-4 text-sm text-gray-500">Loading…</p>
           ) : threads.length === 0 ? (
             <div className="p-4 space-y-3">
