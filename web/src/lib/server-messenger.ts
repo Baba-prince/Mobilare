@@ -211,6 +211,62 @@ export async function sendMessage(opts: {
   return msg;
 }
 
+function assertThreadAccess(
+  face: PortalFace,
+  actorId: string,
+  thread: StoreThread,
+) {
+  if (face === "crm") return;
+  if (face === "customer" && thread.customerActorId && thread.customerActorId !== actorId) {
+    throw new Error("Forbidden");
+  }
+  if (face === "driver" && thread.driverActorId && thread.driverActorId !== actorId) {
+    throw new Error("Forbidden");
+  }
+  if (face === "customer" && !thread.customerActorId) throw new Error("Forbidden");
+  if (face === "driver" && !thread.driverActorId) throw new Error("Forbidden");
+}
+
+export async function deleteMessage(opts: {
+  messageId: string;
+  face: PortalFace;
+  actorId: string;
+}) {
+  const store = await readStore();
+  const msg = store.messages.find((m) => m.id === opts.messageId);
+  if (!msg) throw new Error("Message not found");
+  const thread = store.threads.find((t) => t.id === msg.threadId);
+  if (!thread) throw new Error("Thread not found");
+  assertThreadAccess(opts.face, opts.actorId, thread);
+
+  store.messages = store.messages.filter((m) => m.id !== opts.messageId);
+  const remaining = store.messages
+    .filter((m) => m.threadId === thread.id)
+    .sort((a, b) => a.at.localeCompare(b.at));
+  const last = remaining[remaining.length - 1];
+  thread.lastMessageAt = last?.at || thread.createdAt;
+  thread.lastMessagePreview = last?.body.slice(0, 160) || "";
+  thread.context = thread.lastMessagePreview;
+  await writeStore(store);
+  return { ok: true, threadId: thread.id };
+}
+
+export async function deleteThread(opts: {
+  threadId: string;
+  face: PortalFace;
+  actorId: string;
+}) {
+  const store = await readStore();
+  const thread = store.threads.find((t) => t.id === opts.threadId);
+  if (!thread) throw new Error("Thread not found");
+  assertThreadAccess(opts.face, opts.actorId, thread);
+
+  store.threads = store.threads.filter((t) => t.id !== opts.threadId);
+  store.messages = store.messages.filter((m) => m.threadId !== opts.threadId);
+  await writeStore(store);
+  return { ok: true };
+}
+
 export async function createAiLeadThread(opts: {
   name: string;
   email: string;

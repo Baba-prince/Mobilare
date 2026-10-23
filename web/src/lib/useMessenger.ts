@@ -192,6 +192,56 @@ export function useMessenger(face: MessengerFace) {
     /* unread counters optional in file store */
   }
 
+  async function removeMessage(messageId: string) {
+    if (!actor || !messageId) return false;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/messaging/messages?messageId=${encodeURIComponent(messageId)}`,
+        { method: "DELETE", headers: headers(face, actor) },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      const tid = activeIdRef.current;
+      if (tid) await loadMessages(tid);
+      await loadThreads({ silent: true });
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeThread(threadId: string) {
+    if (!actor || !threadId) return false;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/messaging/threads?threadId=${encodeURIComponent(threadId)}`,
+        { method: "DELETE", headers: headers(face, actor) },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setMessagesByThread((prev) => {
+        const next = { ...prev };
+        delete next[threadId];
+        return next;
+      });
+      if (activeIdRef.current === threadId) setActiveId(undefined);
+      await loadThreads({ silent: true });
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return {
     threads,
     messages,
@@ -206,6 +256,8 @@ export function useMessenger(face: MessengerFace) {
     ensureThread,
     send,
     markRead,
+    removeMessage,
+    removeThread,
     refresh: () => loadThreads({ silent: false }),
   };
 }

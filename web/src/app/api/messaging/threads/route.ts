@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listThreads, openThread, type PortalFace } from "@/lib/server-messenger";
+import {
+  deleteThread,
+  listThreads,
+  openThread,
+  type PortalFace,
+} from "@/lib/server-messenger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,4 +44,27 @@ export async function POST(req: NextRequest) {
     kind: body.kind,
   });
   return NextResponse.json({ thread });
+}
+
+export async function DELETE(req: NextRequest) {
+  const actor = actorOf(req);
+  if (!actor) {
+    return NextResponse.json({ error: "Missing actor" }, { status: 400 });
+  }
+  const face = faceOf(req);
+  const threadId =
+    req.nextUrl.searchParams.get("threadId") ||
+    String((await req.json().catch(() => ({}))).threadId || "");
+  if (!threadId) {
+    return NextResponse.json({ error: "threadId required" }, { status: 400 });
+  }
+  try {
+    const result = await deleteThread({ threadId, face, actorId: actor });
+    return NextResponse.json(result);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Delete failed" },
+      { status: 400 },
+    );
+  }
 }

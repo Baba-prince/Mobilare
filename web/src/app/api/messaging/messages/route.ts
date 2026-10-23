@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listMessages, sendMessage, type PortalFace } from "@/lib/server-messenger";
+import {
+  deleteMessage,
+  listMessages,
+  sendMessage,
+  type PortalFace,
+} from "@/lib/server-messenger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +52,29 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Send failed" },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const actor = actorOf(req);
+  if (!actor) {
+    return NextResponse.json({ error: "Missing actor" }, { status: 400 });
+  }
+  const face = faceOf(req);
+  const messageId =
+    req.nextUrl.searchParams.get("messageId") ||
+    String((await req.json().catch(() => ({}))).messageId || "");
+  if (!messageId) {
+    return NextResponse.json({ error: "messageId required" }, { status: 400 });
+  }
+  try {
+    const result = await deleteMessage({ messageId, face, actorId: actor });
+    return NextResponse.json(result);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Delete failed" },
       { status: 400 },
     );
   }
